@@ -58,15 +58,15 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 **Uninformed Search:**
 
-- Breadth-First Search (BFS)- 📱 **Responsive Design** with Tailwind CSS
+- Breadth-First Search (BFS)
 
 - Depth-First Search (DFS)
 
-- Depth-Limited Search- 🎭 **Interactive Icons** with hover effects and tooltips- Breadth First Search
+- Depth-Limited Search
 
 - Iterative Deepening Search
 
-- Uniform Cost Search (UCS)- 🚀 **Real-time Visualization** of algorithm execution- Depth First Search
+- Uniform Cost Search (UCS)
 
 
 
@@ -74,7 +74,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 - Greedy Best-First Search
 
-- A* Search## ✨ Features- Iterative Deepening Search
+- A* Search
 
 
 
@@ -82,7 +82,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 - **Color-coded nodes**:
 
-  - 🔴 Red: Source node### Graph Construction- Greedy Search
+  - 🔴 Red: Source node
 
   - 🟢 Green: Goal nodes
 
@@ -90,11 +90,11 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
   - 🟠 Orange: Solution path
 
-  - ⚪ White: Unvisited nodes- **Edge Management**: Create directed or undirected edges with custom weights
+  - ⚪ White: Unvisited nodes
 
 - **Step-by-step animation** with adjustable speed (500ms intervals)
 
-- **Real-time console logging** for debugging and learning- **Heuristic Assignment**: Set heuristic values for informed search algorithms# App Tech Stack
+- **Real-time console logging** for debugging and learning
 
 
 
@@ -234,7 +234,7 @@ http://localhost:8000/index.html
 ## 📁 Project Structure
 
 
-``````
+```
 
 AI-Search/
 
@@ -254,11 +254,11 @@ AI-Search/
 
 ├── legacy/                 # Original version (preserved for reference)
 
-│   ├── index.html```
+│   ├── index.html
 
 │   ├── main.py
 
-│   └── README-original.mdAn example graph is in the below figure.
+│   └── README-original.md
 
 └── graphic/                # Assets and images
 
@@ -266,24 +266,20 @@ AI-Search/
 
 
 
-## 🎓 Educational Value```![](/graphic/example_graph.jpg)
+## 🎓 Educational Value
 
-
-
-This tool is perfect for:http://localhost:8000/index.html
 
 - **Students** learning AI search algorithms
 
-- **Educators** demonstrating algorithm behavior```</br>
+- **Educators** demonstrating algorithm behavior
 
 - **Developers** understanding pathfinding concepts
 
-- **Researchers** prototyping graph-based algorithms3 – Choose a searching algorithm from the bottom and click solve. The above graph is modified (goals, weights, and heuristics) and solved using A\* is shown below.
+- **Researchers** prototyping graph-based algorithms
 
 
 
-## 🤝 Attribution & License### Option 3: VS Code Live Server</br>
-
+## 🤝 Attribution & License
 
 
 ### Original Project</br>
@@ -294,7 +290,6 @@ This tool is perfect for:http://localhost:8000/index.html
 
 - **License**: MIT License (2021)
 
-2. Install the "Live Server" extension![](/graphic/searched_graph.jpg)
 
 ### Modernization Enhancements
 
@@ -302,7 +297,7 @@ This tool is perfect for:http://localhost:8000/index.html
 
 - **GitHub**: [@ashfaknawshad](https://github.com/ashfaknawshad)
 
-- **Year**: 2025The agent starts to paint the visited nodes **purple** , and then, when it finds a goal, it paints the solution path with **orange** as seen in the above figure.
+- **Year**: 2025
 
 - **Key Additions**:
 
@@ -314,27 +309,23 @@ This tool is perfect for:http://localhost:8000/index.html
 
   - Improved animation and rendering system
 
-  - Enhanced debugging and console logging1. **Add Nodes**: Click anywhere on the canvas
-
-2. **Add Edges**: Select the edge tool, then click two nodes to connect
-
-### License3. **Set Goal**: Click the flag icon, then click a node to toggle goal state
-
-4. **Set Weights**: Click the weight icon, then click an edge label to modify
-
-This project retains the original MIT License. See [LICENSE](LICENSE) file for full text.5. **Set Heuristics**: Click the hash icon, then click a node to set heuristic value
+  - Enhanced debugging and console logging
 
 
 
-**Both the original work by Ali Elganzory and modernization enhancements are licensed under MIT.**### Navigation
+### License
 
 
 
-## 🐛 Known Issues & Troubleshooting- **Pan**: Right-click and drag (or middle-click drag)
+This project retains the original MIT License. See [LICENSE](LICENSE) file for full text.
 
-- **Zoom**: Mouse wheel (or use zoom controls in bottom-left)
 
-### Tailwind CDN Warning- **Reset View**: Click the maximize icon in zoom controls
+
+**Both the original work by Ali Elganzory and modernization enhancements are licensed under MIT.**
+
+
+
+## 🐛 Known Issues & Troubleshooting- *
 
 - **Issue**: Console shows "cdn.tailwindcss.com should not be used in production"
 
@@ -342,19 +333,14 @@ This project retains the original MIT License. See [LICENSE](LICENSE) file for f
 
 - **Solution**: Ignore or switch to compiled Tailwind for large-scale production
 
-1. Select an algorithm from the bottom panel
 
-### Yellow Import Warnings in VS Code2. Ensure at least one goal node is set (green)
-
-- **Issue**: `from browser import...` shows yellow underlines3. Click "🚀 Start Search"
+- **Issue**: `from browser import...` shows yellow underlines
 
 - **Impact**: None - these are Brython-specific imports that work in browser4. Watch the visualization unfold!
 
 - **Solution**: Warnings can be safely ignored
 
-### Exporting Results
 
-### GIF Recorder Not Available
 
 - **Issue**: Console shows "GIF recorder not available yet"- **PNG**: Instant snapshot of current canvas state
 
@@ -420,67 +406,7 @@ https://ashfaknawshad.github.io/AI-Search/├── main.py                 # Co
 
 └── graphic/                # Assets and images
 
-## 📞 Contact & Contributions```
 
-
-
-Found a bug or want to contribute? ## 🎓 Educational Value
-
-- Open an issue on GitHub
-
-- Submit a pull requestThis tool is perfect for:
-
-- Fork and customize for your needs!- **Students** learning AI search algorithms
-
-- **Educators** demonstrating algorithm behavior
-
----- **Developers** understanding pathfinding concepts
-
-- **Researchers** prototyping graph-based algorithms
-
-**⭐ If you find this project useful, please star it on GitHub!**
-
-## 🤝 Attribution & License
-
-Made with ❤️ for the AI education community
-
-### Original Project
-- **Author**: Ali Elganzory
-- **Repository**: [github.com/Ali-Elganzory/AI-Search](https://github.com/Ali-Elganzory/AI-Search)
-- **License**: MIT License (2021)
-
-### Modernization Enhancements
-- **Enhancements by**: [Your Name/Username]
-- **Year**: 2025
-- **Key Additions**:
-  - Modern UI/UX with Tailwind CSS and Lucide Icons
-  - Infinite canvas with pan/zoom functionality
-  - Export features (PNG, PDF, GIF)
-  - Improved animation and rendering system
-  - Enhanced debugging and console logging
-
-### License
-
-This project retains the original MIT License. See [LICENSE](LICENSE) file for full text.
-
-**Both the original work by Ali Elganzory and modernization enhancements are licensed under MIT.**
-
-## 🐛 Known Issues & Troubleshooting
-
-### Tailwind CDN Warning
-- **Issue**: Console shows "cdn.tailwindcss.com should not be used in production"
-- **Impact**: None for GitHub Pages / portfolio projects
-- **Solution**: Ignore or switch to compiled Tailwind for large-scale production
-
-### Yellow Import Warnings in VS Code
-- **Issue**: `from browser import...` shows yellow underlines
-- **Impact**: None - these are Brython-specific imports that work in browser
-- **Solution**: Warnings can be safely ignored
-
-### GIF Recorder Not Available
-- **Issue**: Console shows "GIF recorder not available yet"
-- **Impact**: GIF export may not work immediately on page load
-- **Solution**: Wait for page to fully load before starting a search with GIF recording
 
 ## 🚀 Deployment to GitHub Pages
 
