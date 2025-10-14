@@ -228,6 +228,12 @@ class SearchAgent(object):
         return self.graph[node.name].state
 
     def set_node_state(self, node, state):
+        # Debug: log state changes so frontend can show them in console
+        try:
+            print(f"set_node_state: node={node.name} -> {state}")
+        except Exception:
+            # Fall back if node has no name attribute
+            print(f"set_node_state: setting state to {state}")
         self.graph[node.name].state = state
 
     # Checks whether the state is the goal state (goal)
@@ -258,6 +264,13 @@ class SearchAgent(object):
             self.graph[goal.name].state = "source"
             return
 
+        # Mark solution path in the graph and log it
+        try:
+            print(f"finished: result={result}, goal={goal.name}, path={goal.path}")
+        except Exception:
+            print(f"finished: result={result}")
+
         for node_name in goal.path[0:]:
             self.graph[node_name].state = "path"
-        self.graph[goal.path[0]].state = "source"
+        if len(goal.path) > 0:
+            self.graph[goal.path[0]].state = "source"
