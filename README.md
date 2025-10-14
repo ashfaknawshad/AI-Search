@@ -149,7 +149,7 @@ http://localhost:8000/index.html
 
 1. Open the project folder in VS Code
 
-2. Install the "Live Server" extension- A* Search## Method 2
+2. Install the "Live Server" extension
 
 3. Right-click `index.html` and select "Open with Live Server"
 
@@ -165,23 +165,19 @@ http://localhost:8000/index.html
 
 1. **Add Nodes**: Click anywhere on the canvas
 
-2. **Add Edges**: Select the edge tool, then click two nodes to connect  - 🔴 Red: Source node2 – Open [http://localhost:8000/index.html](http://localhost:8000/index.html).
+2. **Add Edges**: Select the edge tool, then click two nodes to connect
 
 3. **Set Goal**: Click the flag icon, then click a node to toggle goal state
 
-4. **Set Weights**: Click the weight icon, then click an edge label to modify  - 🟢 Green: Goal nodes
+4. **Set Weights**: Click the weight icon, then click an edge label to modify 
 
 5. **Set Heuristics**: Click the hash icon, then click a node to set heuristic value
 
-  - 🟣 Purple: Visited nodes during search## Method 3
-
 ### Navigation
-
-  - 🟠 Orange: Solution path
 
 - **Pan**: Right-click and drag (or middle-click drag)
 
-- **Zoom**: Mouse wheel (or use zoom controls in bottom-left)  - ⚪ White: Unvisited nodes1 – Open the root directory of the project in Visual Studio Code.
+- **Zoom**: Mouse wheel (or use zoom controls in bottom-left)
 
 - **Reset View**: Click the maximize icon in zoom controls
 
@@ -189,7 +185,7 @@ http://localhost:8000/index.html
 
 ### Running Algorithms
 
-- **Real-time console logging** for debugging and learning2 – Install &quot;Live Server&quot; vscode extension.
+- **Real-time console logging** for debugging and learning
 
 1. Select an algorithm from the bottom panel
 
@@ -197,48 +193,45 @@ http://localhost:8000/index.html
 
 3. Click "🚀 Start Search"
 
-4. Watch the visualization unfold!## 🚀 Quick Start3 – Click &quot;Go live&quot; at the right bottom of the editor; It will open the app website in your browser automatically.
-
+4. Watch the visualization unfold!
 
 
 ### Exporting Results
 
 
 
-- **PNG**: Instant snapshot of current canvas state### Option 1: GitHub Pages (Recommended)# Use Instructions – Demo
+- **PNG**: Instant snapshot of current canvas state
 
 - **PDF**: Export as PDF document
 
-- **GIF**: Records animation from search start to completion (auto-saves when search finishes)Visit the live demo: [Your GitHub Pages URL]
+- **GIF**: Records animation from search start to completion (auto-saves when search finishes)
 
 
 
-## 🛠️ Tech Stack1 – Open the app. The tools are labeled on the below figure.
+## 🛠️ Tech Stack
 
 
 
-- **Frontend**: HTML5, CSS3 (Tailwind CSS)### Option 2: Local Development
+- **Frontend**: HTML5, CSS3 (Tailwind CSS)
 
 - **Python Integration**: Brython 3.9 (Python-to-JavaScript transpiler)
 
-- **Icons**: Lucide Icons![](/graphic/app_labeled.jpg)
+- **Icons**: Lucide Icons
 
 - **Tooltips**: Tippy.js
 
-- **Canvas**: HTML5 Canvas API with transform/scale for pan/zoom1. **Clone the repository**
+- **Canvas**: HTML5 Canvas API with transform/scale for pan/zoom1. 
 
 - **Export Libraries**: 
 
-  - gif.js (GIF encoding)```bash</br>
+  - gif.js (GIF encoding)
 
   - jsPDF (PDF generation)
 
-  - html2canvas (Canvas capture)git clone https://github.com/[YourUsername]/AI-Search.git
+  - html2canvas (Canvas capture)
 
 
-
-## 📁 Project Structurecd AI-Search2 – Start constructing the graph. You can
-
+## 📁 Project Structure
 
 
 ``````
@@ -253,7 +246,7 @@ AI-Search/
 
 ├── Node.py                 # Node data structure
 
-├── PriorityQueue.py        # Priority queue for informed search```bash- Set / Remove a goal by clicking on any node – except the source.
+├── PriorityQueue.py        # Priority queue for informed searc
 
 ├── gif-recorder.js         # GIF recording module
 
@@ -269,7 +262,7 @@ AI-Search/
 
 └── graphic/                # Assets and images
 
-```3. **Open in browser**
+```
 
 
 
