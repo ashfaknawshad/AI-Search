@@ -1,4 +1,4 @@
-# AI Search Visualizer - Modern Edition# AI Search Visualizer - Modern Edition# AI-Search
+# AI Search Visualizer - Modern Edition
 
 
 
@@ -6,15 +6,17 @@ An interactive educational web application for visualizing AI search algorithms 
 
 
 
-![AI Search Visualizer](https://img.shields.io/badge/AI-Search%20Visualizer-blueviolet?style=for-the-badge)An interactive educational web application for visualizing AI search algorithms with a modern, intuitive interface.Check this app at:
+![AI Search Visualizer](https://img.shields.io/badge/AI-Search%20Visualizer-blueviolet?style=for-the-badge) An interactive educational web application for visualizing AI search algorithms with a modern, intuitive interface.Check this app at:
 
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-![Brython](https://img.shields.io/badge/Brython-3.9-blue?style=for-the-badge)https://ali-elganzory.github.io/AI-Search/
+![Brython](https://img.shields.io/badge/Brython-3.9-blue?style=for-the-badge)
+
+https://ali-elganzory.github.io/AI-Search/
 
 
 
-## 🎯 About![AI Search Visualizer](https://img.shields.io/badge/AI-Search%20Visualizer-blueviolet?style=for-the-badge)
+## 🎯 About AI Search Visualizer
 
 
 
@@ -22,7 +24,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 
 
-- 🎨 **Modern UI/UX** with glassmorphism design and smooth animations![Brython](https://img.shields.io/badge/Brython-3.9-blue?style=for-the-badge)# Description
+- 🎨 **Modern UI/UX** with glassmorphism design and smooth animations
 
 - 🔍 **Infinite Canvas** with pan (right-click drag) and zoom (mouse wheel)
 
@@ -46,15 +48,13 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 - **Edge Management**: Create directed or undirected edges with custom weights
 
-- **Heuristic Assignment**: Set heuristic values for informed search algorithms- 🎨 **Modern UI/UX** with glassmorphism design and smooth animations- Multiple search algorithm choices.
+- **Heuristic Assignment**: Set heuristic values for informed search algorithms
 
 - **Interactive Canvas**: Pan, zoom, and navigate large graphs easily
 
-- 🔍 **Infinite Canvas** with pan (right-click drag) and zoom (mouse wheel)
 
 ### Supported Algorithms
 
-- 🖼️ **Export Options** - PNG, PDF, and animated GIF recording## Supported Searching Algorithms
 
 **Uninformed Search:**
 
@@ -86,7 +86,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
   - 🟢 Green: Goal nodes
 
-  - 🟣 Purple: Visited nodes during search- **Node Management**: Add, delete, and configure nodes with states (source, goal, visited, path)- A Star Search
+  - 🟣 Purple: Visited nodes during search
 
   - 🟠 Orange: Solution path
 
@@ -106,7 +106,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 
 Visit the live demo: [https://ashfaknawshad.github.io/AI-Search/](https://ashfaknawshad.github.io/AI-Search/)
 
-### Supported Algorithms
+
 
 ### Option 2: Local Development
 
@@ -118,11 +118,11 @@ Visit the live demo: [https://ashfaknawshad.github.io/AI-Search/](https://ashfak
 
 git clone https://github.com/ashfaknawshad/AI-Search.git
 
-cd AI-Search- Breadth-First Search (BFS)The app source code is attached with this document. Also, the app is source controlled by git and is available at this [repository](https://github.com/Ali-Elganzory/AI-Search). You can browse the incremental phases we followed to develop the app.
+cd AI-Search
 
 ```
 
-- Depth-First Search (DFS)
+
 
 2. **Start a local server**
 
@@ -130,11 +130,11 @@ cd AI-Search- Breadth-First Search (BFS)The app source code is attached with thi
 
 python -m http.server 8000
 
-```- Iterative Deepening Search
+```
 
 
 
-3. **Open in browser**- Uniform Cost Search (UCS)## Method 1
+3. **Open in browser**
 
 ```
 
@@ -142,11 +142,10 @@ http://localhost:8000/index.html
 
 ```
 
-**Informed Search:**The app is deployed on GitHub Pages; Open this link [AI Search (ali-elganzory.github.io)](https://ali-elganzory.github.io/AI-Search/).
+
 
 ### Option 3: VS Code Live Server
 
-- Greedy Best-First Search
 
 1. Open the project folder in VS Code
 
@@ -158,7 +157,7 @@ http://localhost:8000/index.html
 
 ## 📖 How to Use
 
-### Visualization Features1 – Run the command [python -m http.server] in the root directory of the project to get an http server up and running – ready to serve the website.
+### Visualization Features
 
 ### Building Your Graph
 
