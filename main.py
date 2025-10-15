@@ -474,9 +474,22 @@ def handle_tool_action(event):
                     node_counter, (x, y), children={}
                 )
                 graph_updated = True
-        elif selected_tool in ["add_edge", "delete_edge"]:
+        elif selected_tool in ["add_edge"]:
             selected_node_name = unselected
             graph_updated = True
+        elif selected_tool == "delete_edge":
+            # Check if user clicked on an edge directly
+            edge_ends = get_clicked_edge_ends(x, y, 15)
+            if edge_ends != -1:
+                save_state()  # Save state before deleting edge
+                from_node, to_node = edge_ends
+                search_agent.graph[from_node].children.pop(to_node, None)
+                search_agent.graph[to_node].children.pop(from_node, None)
+                graph_updated = True
+            else:
+                # Reset selection if clicking empty space
+                selected_node_name = unselected
+                graph_updated = True
         elif selected_tool == "update_weight":
             edge_ends = get_clicked_edge_ends(x, y, 12)
             if edge_ends != -1:
