@@ -88,7 +88,7 @@ This project is an enhanced version of the original [AI-Search](https://github.c
 ---
 
 ## 📁 Project Structure
-
+```
 AI-Search/
 ├── index.html # Modern UI (main entry point)
 ├── main.py # Core application logic with pan/zoom
@@ -103,7 +103,7 @@ AI-Search/
 │ ├── main.py
 │ └── README-original.md
 └── graphic/ # Assets and images
-
+```
 
 ---
 
