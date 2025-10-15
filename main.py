@@ -524,12 +524,18 @@ def handle_tool_action(event):
         elif selected_tool == "delete_edge":
             if selected_node_name == unselected:
                 selected_node_name = node_name
+                print(f"Delete edge: First node selected = {node_name}")
                 graph_updated = True
             elif selected_node_name != node_name:
                 if node_name in search_agent.graph[selected_node_name].children:
                     save_state()  # Save state before deleting edge
+                    print(f"Delete edge: Removing edge between {selected_node_name} and {node_name}")
                     search_agent.graph[selected_node_name].children.pop(node_name, None)
                     search_agent.graph[node_name].children.pop(selected_node_name, None)
+                    selected_node_name = unselected
+                    graph_updated = True
+                else:
+                    print(f"Delete edge: No edge exists between {selected_node_name} and {node_name}")
                     selected_node_name = unselected
                     graph_updated = True
 
@@ -781,6 +787,7 @@ def animation_loop(event=None):
 def select_tool(tool_name):
     global selected_tool
     selected_tool = tool_name
+    print(f"Tool selected: {tool_name}")
 
 
 def select_algorithm(algo_name):
