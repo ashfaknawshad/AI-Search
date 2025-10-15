@@ -526,7 +526,12 @@ def handle_tool_action(event):
                 selected_node_name = node_name
                 print(f"Delete edge: First node selected = {node_name}")
                 graph_updated = True
-            elif selected_node_name != node_name:
+            elif selected_node_name == node_name:
+                # Clicking same node again - deselect
+                print(f"Delete edge: Deselecting node {node_name}")
+                selected_node_name = unselected
+                graph_updated = True
+            else:
                 if node_name in search_agent.graph[selected_node_name].children:
                     save_state()  # Save state before deleting edge
                     print(f"Delete edge: Removing edge between {selected_node_name} and {node_name}")
