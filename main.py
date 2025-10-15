@@ -25,9 +25,14 @@ is_panning = False
 last_mouse_x = 0
 last_mouse_y = 0
 
+# Node dragging
+is_dragging_node = False
+dragged_node_name = None
+
 # Graph visualization
 circle_radius = 20
 weight_text_shift = 10
+show_labels = True  # Toggle for heuristics and weights display
 circle_colors = {
     "unselected": "#1e293b",
     "selected": "#ef4444"
@@ -42,7 +47,6 @@ node_colors = {
 
 # Graph configuration
 search_agent = None
-graph_type = "undirected"
 node_counter = 0
 unselected = " "
 selected_tool = "add_node"
@@ -53,6 +57,11 @@ selected_search_algorithm = "breadth-first"
 # Animation and search
 start_date = 0
 search_generator = None
+
+# Undo/Redo functionality
+history_stack = []
+redo_stack = []
+max_history = 50  # Maximum number of undo states to keep
 
 # GIF Recording
 gif_recorder = None
@@ -132,6 +141,7 @@ def handle_wheel(event):
 
 def handle_mouse_down(event):
     global is_panning, last_mouse_x, last_mouse_y, selected_tool
+    global is_dragging_node, dragged_node_name
     
     # Right click or middle click for panning
     if event.button == 2 or event.button == 1:
@@ -141,13 +151,36 @@ def handle_mouse_down(event):
         event.preventDefault()
         return
     
-    # Left click for tool actions
+    # Left click
     if event.button == 0:
+        # Check if clicking on a node for dragging (when move_node tool is selected)
+        # Convert screen coordinates to canvas coordinates
+        x, y = transform_point(event.clientX, event.clientY)
+        node_name = get_clicked_node_name(x, y, circle_radius)
+        
+        # If move_node tool is selected
+        if selected_tool == "move_node":
+            if node_name != -1:
+                # Clicking on a node - enable node dragging
+                save_state()  # Save state before starting drag
+                is_dragging_node = True
+                dragged_node_name = node_name
+                last_mouse_x = event.clientX
+                last_mouse_y = event.clientY
+            else:
+                # Clicking on empty space - enable canvas panning
+                is_panning = True
+                last_mouse_x = event.clientX
+                last_mouse_y = event.clientY
+            return
+        
+        # Otherwise, handle tool actions
         handle_tool_action(event)
 
 
 def handle_mouse_move(event):
     global pan_x, pan_y, last_mouse_x, last_mouse_y, graph_updated
+    global is_dragging_node, dragged_node_name
     
     if is_panning:
         dx = event.clientX - last_mouse_x
@@ -157,11 +190,42 @@ def handle_mouse_move(event):
         last_mouse_x = event.clientX
         last_mouse_y = event.clientY
         graph_updated = True
+        return
+    
+    if is_dragging_node and dragged_node_name is not None:
+        # Calculate movement in canvas coordinates
+        dx = event.clientX - last_mouse_x
+        dy = event.clientY - last_mouse_y
+        
+        # Apply movement scaled by zoom level
+        node = search_agent.graph[dragged_node_name]
+        node.position = (
+            node.position[0] + dx / zoom_level,
+            node.position[1] + dy / zoom_level
+        )
+        
+        last_mouse_x = event.clientX
+        last_mouse_y = event.clientY
+        graph_updated = True
+        return
+    
+    # Update cursor based on hover (when move_node tool is selected)
+    if selected_tool == "move_node":
+        x, y = transform_point(event.clientX, event.clientY)
+        node_name = get_clicked_node_name(x, y, circle_radius)
+        
+        if node_name != -1:
+            canvas.style.cursor = "move"
+        else:
+            canvas.style.cursor = "default"
 
 
 def handle_mouse_up(event):
-    global is_panning
+    global is_panning, is_dragging_node, dragged_node_name
+    
     is_panning = False
+    is_dragging_node = False
+    dragged_node_name = None
 
 
 def zoom_in():
@@ -200,6 +264,191 @@ def reset_view():
     graph_updated = True
 
 
+def toggle_labels():
+    """Toggle display of heuristics and edge weights"""
+    global show_labels, graph_updated
+    show_labels = not show_labels
+    
+    # Toggle button visual state
+    try:
+        btn = document["toggle_labels"]
+        if show_labels:
+            btn.classList.add("active")
+        else:
+            btn.classList.remove("active")
+    except Exception:
+        pass
+    
+    graph_updated = True
+    print(f"Labels display: {'ON' if show_labels else 'OFF'}")
+
+
+def reset_canvas():
+    """Reset the entire canvas - clear all nodes and edges, but keep start node"""
+    global search_agent, node_counter, graph_updated, zoom_level, pan_x, pan_y
+    
+    # Confirm before resetting
+    if window.confirm("Are you sure you want to reset the canvas? This will clear all nodes and edges."):
+        save_state()  # Save state before resetting
+        # Reset the graph with a new centered source node
+        search_agent.graph = {
+            0: Node(0, (window_width / 2, window_height / 2), state="source", children={}),
+        }
+        node_counter = 0
+        
+        # Reset view
+        zoom_level = 1.0
+        pan_x = 0
+        pan_y = 0
+        
+        # Re-enable solve button if it was disabled
+        try:
+            document["solve"].disabled = False
+        except Exception:
+            pass
+        
+        graph_updated = True
+        print("Canvas reset complete - start node preserved")
+
+
+########################################
+########   Undo/Redo Functions  ########
+########################################
+
+def save_state():
+    """Save current graph state to history stack"""
+    global history_stack, redo_stack
+    
+    # Create a deep copy of the current graph state
+    state = {
+        'graph': {},
+        'node_counter': node_counter,
+        'pan_x': pan_x,
+        'pan_y': pan_y,
+        'zoom_level': zoom_level
+    }
+    
+    # Copy all nodes and their properties
+    for name, node in search_agent.graph.items():
+        state['graph'][name] = {
+            'name': node.name,
+            'position': (node.position[0], node.position[1]),
+            'state': node.state,
+            'heuristic': node.heuristic,
+            'children': dict(node.children)  # Copy the children dictionary
+        }
+    
+    history_stack.append(state)
+    
+    # Limit history size
+    if len(history_stack) > max_history:
+        history_stack.pop(0)
+    
+    # Clear redo stack when new action is performed
+    redo_stack.clear()
+
+
+def undo():
+    """Undo the last action"""
+    global history_stack, redo_stack, search_agent, node_counter, graph_updated
+    global pan_x, pan_y, zoom_level, selected_node_name
+    
+    if len(history_stack) == 0:
+        print("Nothing to undo")
+        return
+    
+    # Save current state to redo stack before undoing
+    current_state = {
+        'graph': {},
+        'node_counter': node_counter,
+        'pan_x': pan_x,
+        'pan_y': pan_y,
+        'zoom_level': zoom_level
+    }
+    
+    for name, node in search_agent.graph.items():
+        current_state['graph'][name] = {
+            'name': node.name,
+            'position': (node.position[0], node.position[1]),
+            'state': node.state,
+            'heuristic': node.heuristic,
+            'children': dict(node.children)
+        }
+    
+    redo_stack.append(current_state)
+    
+    # Restore previous state
+    state = history_stack.pop()
+    restore_state(state)
+    
+    print("Undo successful")
+
+
+def redo():
+    """Redo the last undone action"""
+    global redo_stack, history_stack, search_agent, node_counter, graph_updated
+    global pan_x, pan_y, zoom_level
+    
+    if len(redo_stack) == 0:
+        print("Nothing to redo")
+        return
+    
+    # Save current state to history stack before redoing
+    current_state = {
+        'graph': {},
+        'node_counter': node_counter,
+        'pan_x': pan_x,
+        'pan_y': pan_y,
+        'zoom_level': zoom_level
+    }
+    
+    for name, node in search_agent.graph.items():
+        current_state['graph'][name] = {
+            'name': node.name,
+            'position': (node.position[0], node.position[1]),
+            'state': node.state,
+            'heuristic': node.heuristic,
+            'children': dict(node.children)
+        }
+    
+    history_stack.append(current_state)
+    
+    # Restore redo state
+    state = redo_stack.pop()
+    restore_state(state)
+    
+    print("Redo successful")
+
+
+def restore_state(state):
+    """Restore a saved state"""
+    global search_agent, node_counter, graph_updated, pan_x, pan_y, zoom_level
+    global selected_node_name
+    
+    # Restore node counter and view settings
+    node_counter = state['node_counter']
+    pan_x = state['pan_x']
+    pan_y = state['pan_y']
+    zoom_level = state['zoom_level']
+    
+    # Clear current graph
+    search_agent.graph.clear()
+    
+    # Restore all nodes
+    for name, node_data in state['graph'].items():
+        search_agent.graph[name] = Node(
+            node_data['name'],
+            node_data['position'],
+            state=node_data['state'],
+            children=node_data['children']
+        )
+        search_agent.graph[name].heuristic = node_data['heuristic']
+    
+    # Clear selection
+    selected_node_name = unselected
+    graph_updated = True
+
+
 ########################################
 ########     Tool Actions       ########
 ########################################
@@ -219,6 +468,7 @@ def handle_tool_action(event):
         # No node clicked
         if selected_tool == "add_node":
             if get_clicked_node_name(x, y, circle_radius * 3) == -1:
+                save_state()  # Save state before adding node
                 node_counter += 1
                 search_agent.graph[node_counter] = Node(
                     node_counter, (x, y), children={}
@@ -237,6 +487,7 @@ def handle_tool_action(event):
         # Node clicked
         if selected_tool == "toggle_goal":
             if search_agent.graph[node_name].state != "source":
+                save_state()  # Save state before toggling goal
                 if search_agent.graph[node_name].state == "goal":
                     search_agent.graph[node_name].state = "empty"
                 else:
@@ -252,6 +503,7 @@ def handle_tool_action(event):
         
         elif selected_tool == "delete_node":
             if search_agent.graph[node_name].state != "source":
+                save_state()  # Save state before deleting node
                 search_agent.graph.pop(node_name)
                 for node in search_agent.graph.values():
                     search_agent.graph[node.name].children.pop(node_name, None)
@@ -263,9 +515,9 @@ def handle_tool_action(event):
                 graph_updated = True
             elif selected_node_name != node_name:
                 if node_name not in search_agent.graph[selected_node_name].children:
+                    save_state()  # Save state before adding edge
                     search_agent.graph[selected_node_name].children[node_name] = 1
-                    if graph_type == "undirected":
-                        search_agent.graph[node_name].children[selected_node_name] = 1
+                    search_agent.graph[node_name].children[selected_node_name] = 1
                     selected_node_name = unselected
                     graph_updated = True
         
@@ -275,9 +527,9 @@ def handle_tool_action(event):
                 graph_updated = True
             elif selected_node_name != node_name:
                 if node_name in search_agent.graph[selected_node_name].children:
+                    save_state()  # Save state before deleting edge
                     search_agent.graph[selected_node_name].children.pop(node_name, None)
-                    if graph_type == "undirected":
-                        search_agent.graph[node_name].children.pop(selected_node_name, None)
+                    search_agent.graph[node_name].children.pop(selected_node_name, None)
                     selected_node_name = unselected
                     graph_updated = True
 
@@ -286,7 +538,8 @@ def get_clicked_node_name(x, y, radius):
     for node in search_agent.graph.values():
         dx = x - node.position[0]
         dy = y - node.position[1]
-        if jsMath.sqrt(dx * dx + dy * dy) <= radius:
+        distance = jsMath.sqrt(dx * dx + dy * dy)
+        if distance <= radius:
             return node.name
     return -1
 
@@ -310,14 +563,54 @@ def get_clicked_edge_ends(x, y, radius):
 ########      Rendering         ########
 ########################################
 
+def get_canvas_bg_color():
+    """Get the current canvas background color from CSS variable"""
+    try:
+        # Get computed style from body
+        styles = window.getComputedStyle(document.body)
+        return styles.getPropertyValue('--canvas-bg').strip()
+    except Exception:
+        # Fallback to dark mode color
+        return '#0f172a'
+
+
+def toggle_theme():
+    """Toggle between light and dark mode"""
+    global graph_updated
+    body = document.body
+    theme_icon = document["theme_icon"]
+    
+    if body.classList.contains('light-mode'):
+        body.classList.remove('light-mode')
+        theme_icon.setAttribute('data-lucide', 'moon')
+        print("Switched to dark mode")
+    else:
+        body.classList.add('light-mode')
+        theme_icon.setAttribute('data-lucide', 'sun')
+        print("Switched to light mode")
+    
+    # Re-initialize Lucide icons
+    try:
+        window.lucide.createIcons()
+    except Exception:
+        pass
+    
+    graph_updated = True
+
+
 def draw():
     global graph_updated
     
     if not graph_updated:
         return
     
-    # Clear canvas
+    # Clear canvas and fill with background color
     ctx.clearRect(0, 0, window_width, window_height)
+    
+    # Get canvas background color from CSS variable
+    canvas_bg = get_canvas_bg_color()
+    ctx.fillStyle = canvas_bg
+    ctx.fillRect(0, 0, window_width, window_height)
     
     # Draw grid background
     draw_grid()
@@ -344,20 +637,17 @@ def draw():
             ctx.lineTo(*child.position)
             ctx.stroke()
             
-            # Draw arrow for directed graphs
-            if graph_type == "directed":
-                draw_arrow(node.position, child.position)
-            
-            # Draw weight
-            text_x = (node.position[0] + child.position[0]) / 2
-            text_y = (node.position[1] + child.position[1]) / 2
-            
-            # Background for weight text
-            ctx.fillStyle = "white"
-            ctx.fillRect(text_x - 15, text_y - 10, 30, 20)
-            
-            ctx.fillStyle = "#475569"
-            ctx.fillText(str(weight), text_x, text_y)
+            # Draw weight (only if labels are enabled)
+            if show_labels:
+                text_x = (node.position[0] + child.position[0]) / 2
+                text_y = (node.position[1] + child.position[1]) / 2
+                
+                # Background for weight text
+                ctx.fillStyle = "white"
+                ctx.fillRect(text_x - 15, text_y - 10, 30, 20)
+                
+                ctx.fillStyle = "#475569"
+                ctx.fillText(str(weight), text_x, text_y)
     
     # Draw nodes
     for node in search_agent.graph.values():
@@ -377,9 +667,10 @@ def draw():
         ctx.fillStyle = "#1e293b" if node.state == "empty" else "white"
         ctx.fillText(str(node.name), node.position[0], node.position[1] - 6)
         
-        # Heuristic value
-        ctx.font = f'{int(11)}px Inter, sans-serif'
-        ctx.fillText(f"h={node.heuristic}", node.position[0], node.position[1] + 8)
+        # Heuristic value (only if labels are enabled)
+        if show_labels:
+            ctx.font = f'{int(11)}px Inter, sans-serif'
+            ctx.fillText(f"h={node.heuristic}", node.position[0], node.position[1] + 8)
     
     ctx.restore()
     graph_updated = False
@@ -388,7 +679,13 @@ def draw():
 def draw_grid():
     """Draw a subtle grid background"""
     ctx.save()
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"
+    
+    # Use different grid color based on theme
+    if document.body.classList.contains('light-mode'):
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.05)"
+    else:
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"
+    
     ctx.lineWidth = 1
     
     grid_size = 50 * zoom_level
@@ -416,39 +713,6 @@ def draw_grid():
     ctx.restore()
 
 
-def draw_arrow(from_pos, to_pos):
-    """Draw arrow head for directed edges"""
-    dx = to_pos[0] - from_pos[0]
-    dy = to_pos[1] - from_pos[1]
-    distance = jsMath.sqrt(dx * dx + dy * dy)
-    
-    if distance == 0:
-        return
-    
-    # Calculate arrow position (at circle edge)
-    arrow_x = to_pos[0] - dx / distance * circle_radius
-    arrow_y = to_pos[1] - dy / distance * circle_radius
-    
-    # Calculate arrow angle
-    angle = jsMath.atan2(dy, dx)
-    
-    # Draw arrow head
-    arrow_size = 10
-    ctx.save()
-    ctx.translate(arrow_x, arrow_y)
-    ctx.rotate(angle)
-    
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.lineTo(-arrow_size, -arrow_size / 2)
-    ctx.lineTo(-arrow_size, arrow_size / 2)
-    ctx.closePath()
-    ctx.fillStyle = "#94a3b8"
-    ctx.fill()
-    
-    ctx.restore()
-
-
 ########################################
 ########    Animation Loop      ########
 ########################################
@@ -472,8 +736,11 @@ def animation_loop(event=None):
                 start_date = now
                 
                 # Capture frame for GIF if recording
-                if gif_recorder and gif_recorder.recording:
-                    gif_recorder.captureFrame()
+                try:
+                    if window.gifRecorder and window.gifRecorder.recording:
+                        window.gifRecorder.captureFrame()
+                except:
+                    pass
                     
             except StopIteration:
                 print("Search completed")
@@ -490,15 +757,16 @@ def animation_loop(event=None):
                 except Exception:
                     pass
                 # Auto-stop GIF recording if it was running
-                if gif_recorder and gif_recorder.recording:
-                    def stop_gif():
-                        gif_recorder.stopRecording()
-                        # Reset button text
-                        document["export_gif"].innerHTML = '<i data-lucide="film"></i> GIF'
-                        # Refresh icons
-                        window.lucide.createIcons()
-                    # Delay to capture final frame
-                    window.setTimeout(stop_gif, 600)
+                try:
+                    if window.gifRecorder and window.gifRecorder.recording:
+                        def stop_gif():
+                            window.gifRecorder.stopRecording()
+                            # Reset button border
+                            document["export_gif"].style.borderColor = ''
+                        # Delay to capture final frame
+                        window.setTimeout(stop_gif, 600)
+                except:
+                    pass
     
     # Draw after updating search state
     draw()
@@ -513,18 +781,6 @@ def animation_loop(event=None):
 def select_tool(tool_name):
     global selected_tool
     selected_tool = tool_name
-
-
-def select_graph_type(type_name):
-    global graph_type, graph_updated, search_agent, node_counter
-    graph_type = type_name
-    
-    # Reset graph
-    search_agent.graph = {
-        0: Node(0, (window_width / 2, window_height / 2), state="source", children={}),
-    }
-    node_counter = 0
-    graph_updated = True
 
 
 def select_algorithm(algo_name):
@@ -544,10 +800,53 @@ def hide_input_dialog():
     graph_updated = True
 
 
+def show_color_dialog():
+    """Show the color customization dialog"""
+    document["color-modal"].showModal()
+
+
+def hide_color_dialog():
+    """Hide the color customization dialog"""
+    document["color-modal"].close()
+
+
+def update_color(color_type, color_value):
+    """Update node color in real-time"""
+    global node_colors, graph_updated
+    node_colors[color_type] = color_value
+    graph_updated = True
+
+
+def reset_colors():
+    """Reset all colors to default values"""
+    global node_colors, graph_updated
+    
+    # Default colors
+    default_colors = {
+        "empty": "#ffffff",
+        "source": "#ef4444",
+        "goal": "#10b981",
+        "visited": "#8b5cf6",
+        "path": "#f59e0b"
+    }
+    
+    # Update the color pickers
+    document["color-empty"].value = default_colors["empty"]
+    document["color-source"].value = default_colors["source"]
+    document["color-goal"].value = default_colors["goal"]
+    document["color-visited"].value = default_colors["visited"]
+    document["color-path"].value = default_colors["path"]
+    
+    # Update the global colors
+    node_colors.update(default_colors)
+    graph_updated = True
+
+
 def update_heuristic():
     global graph_updated
     validated = document["weights-form"].reportValidity()
     if validated:
+        save_state()  # Save state before updating heuristic
         heuristic = int(document["weights-input"].value)
         search_agent.graph[selected_node_name].heuristic = heuristic
         hide_input_dialog()
@@ -558,11 +857,11 @@ def update_weight():
     global graph_updated
     validated = document["weights-form"].reportValidity()
     if validated:
+        save_state()  # Save state before updating weight
         weight = int(document["weights-input"].value)
         from_node, to_node = selected_edge_ends
         search_agent.graph[from_node].children[to_node] = weight
-        if graph_type == "undirected":
-            search_agent.graph[to_node].children[from_node] = weight
+        search_agent.graph[to_node].children[from_node] = weight
         hide_input_dialog()
         graph_updated = True
 
@@ -587,6 +886,7 @@ def start_search():
         "depth-limit": lambda: search_agent.depth_limit_search(3),
         "iterative-deepening": lambda: search_agent.iterative_deepening_search(10),
         "uniform-cost": search_agent.uniform_cost_search,
+        "bidirectional": search_agent.bidirectional_search,
         "greedy": search_agent.greedy_search,
         "a*": search_agent.a_star_search,
     }
@@ -618,8 +918,11 @@ def start_search():
         start_date = javascript.Date.now()
         
         # Capture initial frame for GIF if recording
-        if gif_recorder and gif_recorder.recording:
-            gif_recorder.captureFrame()
+        try:
+            if window.gifRecorder and window.gifRecorder.recording:
+                window.gifRecorder.captureFrame()
+        except:
+            pass
     else:
         print(f"Algorithm not found: {selected_search_algorithm}")
 
@@ -627,6 +930,68 @@ def start_search():
 ########################################
 ########         Main           ########
 ########################################
+
+def update_selected_display(algo_name):
+    """Update the compact view to show selected algorithm"""
+    try:
+        document["selected-algo-display"].text = algo_name
+        # Collapse panel after selection
+        panel = document["algorithm-panel"]
+        panel.classList.remove("expanded")
+    except Exception as e:
+        print(f"Error updating display: {e}")
+
+def toggle_panel(e):
+    """Toggle expand/collapse of algorithm panel"""
+    # Don't toggle if clicking the solve button
+    target_id = e.target.id
+    
+    # Try to find parent button
+    try:
+        parent_button = e.target.closest("button")
+    except:
+        parent_button = None
+    
+    if target_id == "solve" or (parent_button and parent_button.id == "solve"):
+        return
+    
+    # Don't toggle if clicking algorithm buttons when expanded
+    panel = document["algorithm-panel"]
+    if panel.classList.contains("expanded"):
+        if e.target.classList.contains("algo-btn") or (parent_button and parent_button.classList.contains("algo-btn")):
+            return
+    
+    # Toggle the panel
+    panel.classList.toggle("expanded")
+    # Prevent event from bubbling
+    e.stopPropagation()
+
+def collapse_panel_outside(e):
+    """Collapse panel when clicking outside"""
+    panel = document["algorithm-panel"]
+    if panel.classList.contains("expanded"):
+        # Check if click is outside the panel
+        try:
+            closest_panel = e.target.closest("#algorithm-panel")
+            if closest_panel is None:
+                panel.classList.remove("expanded")
+        except:
+            # If closest fails, collapse the panel
+            panel.classList.remove("expanded")
+
+
+def handle_keyboard_shortcuts(e):
+    """Handle keyboard shortcuts for undo/redo"""
+    # Check for Ctrl+Z (undo) or Ctrl+Y (redo)
+    # On Mac, it's Cmd+Z and Cmd+Shift+Z
+    if (e.ctrlKey or e.metaKey):
+        if e.key.lower() == 'z' and not e.shiftKey:
+            e.preventDefault()
+            undo()
+        elif e.key.lower() == 'y' or (e.key.lower() == 'z' and e.shiftKey):
+            e.preventDefault()
+            redo()
+
 
 def main():
     global start_date
@@ -642,6 +1007,7 @@ def main():
     
     # Bind tool buttons
     document["add_node"].bind("click", lambda e: select_tool("add_node"))
+    document["move_node"].bind("click", lambda e: select_tool("move_node"))
     document["add_edge"].bind("click", lambda e: select_tool("add_edge"))
     document["delete_node"].bind("click", lambda e: select_tool("delete_node"))
     document["delete_edge"].bind("click", lambda e: select_tool("delete_edge"))
@@ -649,21 +1015,31 @@ def main():
     document["update_heuristic"].bind("click", lambda e: select_tool("update_heuristic"))
     document["update_weight"].bind("click", lambda e: select_tool("update_weight"))
     
-    # Bind graph type buttons
-    document["undirected_graph"].bind("click", lambda e: select_graph_type("undirected"))
-    document["directed_graph"].bind("click", lambda e: select_graph_type("directed"))
+    # Bind toggle labels button
+    document["toggle_labels"].bind("click", lambda e: toggle_labels())
+    
+    # Bind reset canvas button
+    document["reset_canvas"].bind("click", lambda e: reset_canvas())
+    
+    # Bind theme toggle button
+    document["theme_toggle"].bind("click", lambda e: toggle_theme())
     
     # Bind algorithm buttons
-    document["breadth-first"].bind("click", lambda e: select_algorithm("breadth-first"))
-    document["depth-first"].bind("click", lambda e: select_algorithm("depth-first"))
-    document["depth-limit"].bind("click", lambda e: select_algorithm("depth-limit"))
-    document["iterative-deepening"].bind("click", lambda e: select_algorithm("iterative-deepening"))
-    document["uniform-cost"].bind("click", lambda e: select_algorithm("uniform-cost"))
-    document["greedy"].bind("click", lambda e: select_algorithm("greedy"))
-    document["a*"].bind("click", lambda e: select_algorithm("a*"))
+    document["breadth-first"].bind("click", lambda e: (select_algorithm("breadth-first"), update_selected_display("Breadth First Search")))
+    document["depth-first"].bind("click", lambda e: (select_algorithm("depth-first"), update_selected_display("Depth First Search")))
+    document["depth-limit"].bind("click", lambda e: (select_algorithm("depth-limit"), update_selected_display("Depth Limited Search")))
+    document["iterative-deepening"].bind("click", lambda e: (select_algorithm("iterative-deepening"), update_selected_display("Iterative Deepening")))
+    document["uniform-cost"].bind("click", lambda e: (select_algorithm("uniform-cost"), update_selected_display("Uniform Cost Search")))
+    document["bidirectional"].bind("click", lambda e: (select_algorithm("bidirectional"), update_selected_display("Bidirectional Search")))
+    document["greedy"].bind("click", lambda e: (select_algorithm("greedy"), update_selected_display("Greedy Best First")))
+    document["a*"].bind("click", lambda e: (select_algorithm("a*"), update_selected_display("A* Search")))
     
     # Bind solve button
     document["solve"].bind("click", lambda e: start_search())
+    
+    # Bind panel expand/collapse
+    document["algorithm-panel"].bind("click", toggle_panel)
+    document.bind("click", collapse_panel_outside)
     
     # Bind zoom controls
     document["zoom_in"].bind("click", lambda e: zoom_in())
@@ -675,6 +1051,21 @@ def main():
     document["weights-update"].bind("click", lambda e: (
         update_heuristic() if selected_tool == "update_heuristic" else update_weight()
     ))
+    
+    # Bind color settings
+    document["color_settings"].bind("click", lambda e: show_color_dialog())
+    document["color-close"].bind("click", lambda e: hide_color_dialog())
+    document["color-reset"].bind("click", lambda e: reset_colors())
+    
+    # Bind color inputs to update colors in real-time
+    document["color-source"].bind("input", lambda e: update_color("source", e.target.value))
+    document["color-goal"].bind("input", lambda e: update_color("goal", e.target.value))
+    document["color-empty"].bind("input", lambda e: update_color("empty", e.target.value))
+    document["color-visited"].bind("input", lambda e: update_color("visited", e.target.value))
+    document["color-path"].bind("input", lambda e: update_color("path", e.target.value))
+    
+    # Bind keyboard shortcuts for undo/redo
+    document.bind("keydown", handle_keyboard_shortcuts)
     
     # Start animation loop
     start_date = javascript.Date.now()

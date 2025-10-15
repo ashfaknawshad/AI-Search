@@ -39,6 +39,26 @@
 	<script type="text/python" src="main.py"></script>
 
 	<style>
+		:root {
+			--bg-gradient-start: #1e293b;
+			--bg-gradient-end: #334155;
+			--canvas-bg: #0f172a;
+			--panel-bg: rgba(255, 255, 255, 0.95);
+			--panel-text: #1e293b;
+			--border-color: #e2e8f0;
+			--text-secondary: #64748b;
+		}
+
+		body.light-mode {
+			--bg-gradient-start: #e0f2fe;
+			--bg-gradient-end: #bae6fd;
+			--canvas-bg: #f8fafc;
+			--panel-bg: rgba(255, 255, 255, 0.95);
+			--panel-text: #1e293b;
+			--border-color: #cbd5e1;
+			--text-secondary: #475569;
+		}
+
 		* {
 			margin: 0;
 			padding: 0;
@@ -48,7 +68,8 @@
 		body {
 			overflow: hidden;
 			font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+			transition: background 0.3s ease;
 		}
 
 		#canvas-container {
@@ -62,12 +83,16 @@
 			cursor: grabbing;
 		}
 
+		#canvas-container.dragging-node {
+			cursor: move !important;
+		}
+
 		.floating-toolbar {
 			position: fixed;
 			top: 20px;
 			left: 50%;
 			transform: translateX(-50%);
-			background: rgba(255, 255, 255, 0.95);
+			background: var(--panel-bg);
 			backdrop-filter: blur(10px);
 			border-radius: 16px;
 			padding: 12px;
@@ -91,7 +116,7 @@
 			justify-content: center;
 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			position: relative;
-			color: #64748b;
+			color: var(--text-secondary);
 		}
 
 		.tool-btn:hover {
@@ -100,8 +125,8 @@
 		}
 
 		.tool-btn.active {
-			border-color: #667eea;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border-color: #3b82f6;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 			color: white;
 		}
 
@@ -112,94 +137,169 @@
 
 		.divider {
 			width: 2px;
-			background: #e2e8f0;
+			background: var(--border-color);
 			margin: 0 4px;
 		}
 
 		.bottom-panel {
 			position: fixed;
-			bottom: 20px;
+			bottom: 12px;
 			left: 50%;
 			transform: translateX(-50%);
-			background: rgba(255, 255, 255, 0.95);
+			background: var(--panel-bg);
 			backdrop-filter: blur(10px);
-			border-radius: 16px;
-			padding: 16px 24px;
-			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+			border-radius: 12px;
+			padding: 10px 16px;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 			z-index: 1000;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			cursor: pointer;
+			transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.bottom-panel.expanded {
+			cursor: default;
+			padding: 16px 20px;
 			max-width: 90vw;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+			transform: translateX(-50%) translateY(-10px) scale(1.02);
+		}
+
+		.panel-compact {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.bottom-panel.expanded .panel-compact {
+			display: none;
+		}
+
+		.panel-expanded {
+			display: none;
+			opacity: 0;
+			animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		}
+
+		.bottom-panel.expanded .panel-expanded {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		@keyframes fadeSlideIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.selected-algorithm {
+			padding: 6px 12px;
+			border-radius: 6px;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+			font-size: 13px;
+			font-weight: 600;
+			white-space: nowrap;
 		}
 
 		.algorithm-section {
-			margin-bottom: 12px;
-		}
-
-		.algorithm-section:last-child {
-			margin-bottom: 0;
+			display: flex;
+			align-items: center;
+			gap: 6px;
 		}
 
 		.section-title {
-			font-size: 12px;
+			font-size: 10px;
 			font-weight: 600;
-			color: #64748b;
-			margin-bottom: 8px;
+			color: var(--text-secondary);
 			text-transform: uppercase;
-			letter-spacing: 0.5px;
+			letter-spacing: 0.3px;
+			white-space: nowrap;
 		}
 
 		.algo-buttons {
 			display: flex;
-			gap: 8px;
+			gap: 4px;
 			flex-wrap: wrap;
 		}
 
 		.algo-btn {
-			padding: 8px 16px;
-			border-radius: 8px;
-			border: 2px solid #e2e8f0;
+			padding: 6px 12px;
+			border-radius: 6px;
+			border: 1.5px solid var(--border-color);
 			background: white;
 			cursor: pointer;
-			font-size: 13px;
+			font-size: 11px;
 			font-weight: 500;
-			color: #475569;
+			color: var(--panel-text);
 			transition: all 0.2s;
+			white-space: nowrap;
 		}
 
 		.algo-btn:hover {
-			border-color: #667eea;
-			color: #667eea;
+			border-color: #3b82f6;
+			color: #3b82f6;
+			transform: translateY(-1px);
 		}
 
 		.algo-btn.active {
-			border-color: #667eea;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border-color: #3b82f6;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 			color: white;
 		}
 
 		.solve-btn {
-			width: 100%;
-			padding: 14px;
-			border-radius: 12px;
+			padding: 8px 20px;
+			border-radius: 8px;
 			border: none;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 			color: white;
 			font-weight: 600;
-			font-size: 16px;
+			font-size: 13px;
 			cursor: pointer;
-			margin-top: 16px;
 			transition: all 0.3s;
+			white-space: nowrap;
+			flex-shrink: 0;
 		}
 
 		.solve-btn:hover {
 			transform: translateY(-2px);
-			box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+			box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+		}
+
+		.panel-divider {
+			width: 1px;
+			height: 30px;
+			background: var(--border-color);
+			flex-shrink: 0;
+		}
+
+		.expand-hint {
+			font-size: 10px;
+			color: #94a3b8;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.expand-hint svg {
+			width: 12px;
+			height: 12px;
 		}
 
 		.export-panel {
 			position: fixed;
 			top: 20px;
 			right: 20px;
-			background: rgba(255, 255, 255, 0.95);
+			background: var(--panel-bg);
 			backdrop-filter: blur(10px);
 			border-radius: 16px;
 			padding: 12px;
@@ -213,12 +313,12 @@
 		.export-btn {
 			padding: 10px 16px;
 			border-radius: 8px;
-			border: 2px solid #e2e8f0;
+			border: 2px solid var(--border-color);
 			background: white;
 			cursor: pointer;
 			font-size: 13px;
 			font-weight: 500;
-			color: #475569;
+			color: var(--panel-text);
 			transition: all 0.2s;
 			display: flex;
 			align-items: center;
@@ -239,10 +339,10 @@
 			height: 56px;
 			border-radius: 50%;
 			border: none;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 			color: white;
 			cursor: pointer;
-			box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+			box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 			transition: all 0.3s;
 			display: flex;
 			align-items: center;
@@ -331,7 +431,7 @@
 			position: fixed;
 			bottom: 20px;
 			left: 20px;
-			background: rgba(255, 255, 255, 0.95);
+			background: var(--panel-bg);
 			backdrop-filter: blur(10px);
 			border-radius: 12px;
 			padding: 8px;
@@ -346,19 +446,19 @@
 			width: 40px;
 			height: 40px;
 			border-radius: 8px;
-			border: 2px solid #e2e8f0;
+			border: 2px solid var(--border-color);
 			background: white;
 			cursor: pointer;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			transition: all 0.2s;
-			color: #64748b;
+			color: var(--text-secondary);
 		}
 
 		.zoom-btn:hover {
-			border-color: #667eea;
-			color: #667eea;
+			border-color: #3b82f6;
+			color: #3b82f6;
 			transform: scale(1.1);
 		}
 	</style>
@@ -372,6 +472,7 @@
 		<button class="tool-btn active" id="add_node" data-tippy-content="Add Node (Click on canvas)">
 			<i data-lucide="plus-circle"></i>
 		</button>
+		
 		<button class="tool-btn" id="add_edge" data-tippy-content="Add Edge (Click two nodes)">
 			<i data-lucide="git-branch"></i>
 		</button>
@@ -384,6 +485,9 @@
 		
 		<div class="divider"></div>
 		
+
+		
+		
 		<button class="tool-btn" id="toggle_goal" data-tippy-content="Toggle Goal State">
 			<i data-lucide="flag"></i>
 		</button>
@@ -394,14 +498,24 @@
 			<i data-lucide="weight"></i>
 		</button>
 		
-		<div class="divider"></div>
-		
-		<!-- Graph Type -->
-		<button class="tool-btn active" id="undirected_graph" data-tippy-content="Undirected Graph">
-			<i data-lucide="minus"></i>
+	
+	<div class="divider"></div>
+	
+	<button class="tool-btn" id="move_node" data-tippy-content="Move (Drag nodes or pan canvas)">
+		<i data-lucide="move"></i>
+	</button>
+
+	<button class="tool-btn active" id="toggle_labels" data-tippy-content="Toggle Heuristics & Weights Display">
+		<i data-lucide="eye"></i>
+	</button>
+			
+		<button class="tool-btn" id="reset_canvas" data-tippy-content="Reset Canvas (Clear All)" style="color: #ef4444;">
+			<i data-lucide="refresh-cw"></i>
 		</button>
-		<button class="tool-btn" id="directed_graph" data-tippy-content="Directed Graph">
-			<i data-lucide="arrow-right"></i>
+		
+		<!-- Color Customization -->
+		<button class="tool-btn" id="color_settings" data-tippy-content="Customize Node Colors">
+			<i data-lucide="palette"></i>
 		</button>
 	</div>
 
@@ -437,30 +551,53 @@
 		<button class="zoom-btn" id="zoom_out" data-tippy-content="Zoom Out">
 			<i data-lucide="zoom-out"></i>
 		</button>
+		
+		<div style="width: 100%; height: 2px; background: var(--border-color); margin: 4px 0;"></div>
+		
+		<!-- Theme Toggle -->
+		<button class="zoom-btn" id="theme_toggle" data-tippy-content="Toggle Dark/Light Mode">
+			<i data-lucide="moon" id="theme_icon"></i>
+		</button>
 	</div>
 
 	<!-- Bottom Panel (Algorithms) -->
-	<div class="bottom-panel">
-		<div class="algorithm-section">
-			<div class="section-title">Uninformed Search</div>
-			<div class="algo-buttons">
-				<button class="algo-btn active" id="breadth-first">Breadth First</button>
-				<button class="algo-btn" id="depth-first">Depth First</button>
-				<button class="algo-btn" id="depth-limit">Depth Limit</button>
-				<button class="algo-btn" id="iterative-deepening">Iterative Deepening</button>
-				<button class="algo-btn" id="uniform-cost">Uniform Cost</button>
-			</div>
-		</div>
-		
-		<div class="algorithm-section">
-			<div class="section-title">Informed Search</div>
-			<div class="algo-buttons">
-				<button class="algo-btn" id="greedy">Greedy</button>
-				<button class="algo-btn" id="a*">A*</button>
-			</div>
+	<div class="bottom-panel" id="algorithm-panel">
+		<!-- Compact View (Default) -->
+		<div class="panel-compact">
+			<span class="selected-algorithm" id="selected-algo-display">Breadth First Search</span>
+			<button class="solve-btn" id="solve"> Start Solving </button>
+			<span class="expand-hint">
+				<i data-lucide="chevrons-up"></i>
+				Click to change
+			</span>
 		</div>
 
-		<button class="solve-btn" id="solve">🚀 Start Search</button>
+		<!-- Expanded View (Shows on click) -->
+		<div class="panel-expanded">
+			<div class="algorithm-section">
+				<div class="section-title">Uninformed:</div>
+				<div class="algo-buttons">
+					<button class="algo-btn active" id="breadth-first" data-name="Breadth First Search">Breadth First Search</button>
+					<button class="algo-btn" id="depth-first" data-name="Depth First Search">Depth First Search</button>
+					<button class="algo-btn" id="depth-limit" data-name="Depth Limited Search">Depth Limited Search</button>
+					<button class="algo-btn" id="iterative-deepening" data-name="Iterative Deepening">Iterative Deepening</button>
+					<button class="algo-btn" id="uniform-cost" data-name="Uniform Cost Search">Uniform Cost Search</button>
+					<button class="algo-btn" id="bidirectional" data-name="Bidirectional Search">Bidirectional Search</button>
+				</div>
+			</div>
+			
+			<div style="display: flex; gap: 12px; align-items: center;">
+				<div class="panel-divider"></div>
+				
+				<div class="algorithm-section">
+					<div class="section-title">Informed:</div>
+					<div class="algo-buttons">
+						<button class="algo-btn" id="greedy" data-name="Greedy Best First">Greedy Best First</button>
+						<button class="algo-btn" id="a*" data-name="A* Search">A* Search</button>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<!-- Help Button -->
@@ -478,7 +615,7 @@
 				</button>
 			</div>
 			<div class="modal-body">
-				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">🎨 Building Your Graph</h3>
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Building Your Graph</h3>
 				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
 					<li><strong>Add Node:</strong> Click anywhere on the canvas</li>
 					<li><strong>Add Edge:</strong> Click two nodes to connect them</li>
@@ -488,21 +625,21 @@
 					<li><strong>Set Heuristics:</strong> Click nodes to set their heuristic values</li>
 				</ul>
 
-				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">🔍 Navigation</h3>
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Navigation</h3>
 				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
-					<li><strong>Pan:</strong> Click and drag on empty canvas space</li>
+					<li><strong>Pan:</strong> Right-click or middle-click and drag on empty canvas space</li>
 					<li><strong>Zoom:</strong> Use mouse wheel or zoom controls</li>
 					<li><strong>Reset View:</strong> Click the maximize icon in zoom controls</li>
 				</ul>
 
-				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">🎬 Running Algorithms</h3>
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Running Algorithms</h3>
 				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
 					<li>Select an algorithm from the bottom panel</li>
 					<li>Click "Start Search" to visualize the algorithm</li>
 					<li>Watch as nodes turn purple (visited) and orange (solution path)</li>
 				</ul>
 
-				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">💾 Exporting</h3>
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Exporting</h3>
 				<ul style="padding-left: 20px; color: #475569; line-height: 1.8;">
 					<li><strong>PNG:</strong> Export current view as image</li>
 					<li><strong>GIF:</strong> Record the algorithm animation</li>
@@ -531,6 +668,102 @@
 		</form>
 	</dialog>
 
+	<!-- Color Settings Modal -->
+	<dialog id="color-modal" style="border: none; border-radius: 20px; padding: 32px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); min-width: 400px;">
+		<div style="margin-bottom: 24px;">
+			<h3 style="font-weight: 600; font-size: 20px; margin-bottom: 8px;">Customize Node Colors</h3>
+			<p style="color: #64748b; font-size: 13px;">Choose colors for different node states</p>
+		</div>
+		
+		<div style="display: flex; flex-direction: column; gap: 20px;">
+			<!-- Start Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">S</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Start Node</div>
+						<div style="font-size: 12px; color: #64748b;">Source node color</div>
+					</div>
+				</div>
+				<input type="color" id="color-source" value="#ef4444" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Goal Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">G</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Goal Node</div>
+						<div style="font-size: 12px; color: #64748b;">Target node color</div>
+					</div>
+				</div>
+				<input type="color" id="color-goal" value="#10b981" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Empty/Passive Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #cbd5e1;">○</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Passive Node</div>
+						<div style="font-size: 12px; color: #64748b;">Unvisited nodes</div>
+					</div>
+				</div>
+				<input type="color" id="color-empty" value="#ffffff" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Visited/Traversing Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">V</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Traversing Node</div>
+						<div style="font-size: 12px; color: #64748b;">Visited during search</div>
+					</div>
+				</div>
+				<input type="color" id="color-visited" value="#8b5cf6" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Solution Path Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">P</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Solution Path</div>
+						<div style="font-size: 12px; color: #64748b;">Final path nodes</div>
+					</div>
+				</div>
+				<input type="color" id="color-path" value="#f59e0b" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+		</div>
+		
+		<div style="display: flex; gap: 12px; margin-top: 28px; justify-content: flex-end;">
+			<button id="color-reset" type="button"
+				style="padding: 10px 20px; border: 2px solid #e2e8f0; border-radius: 8px; background: white; color: #64748b; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+				Reset to Default
+			</button>
+			<button id="color-close" type="button"
+				style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+				Done
+			</button>
+		</div>
+	</dialog>
+
 	<script>
 		// Initialize Lucide icons
 		lucide.createIcons();
@@ -545,20 +778,19 @@
 		// Tool button interactions
 		document.querySelectorAll('.tool-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
-				// Only handle active state for tool buttons, not graph type buttons
-				if (!this.id.includes('graph')) {
-					document.querySelectorAll('.tool-btn').forEach(b => {
-						if (!b.id.includes('graph')) {
-							b.classList.remove('active');
-						}
-					});
-					this.classList.add('active');
-				} else {
-					// Handle graph type toggle
-					document.getElementById('undirected_graph').classList.remove('active');
-					document.getElementById('directed_graph').classList.remove('active');
-					this.classList.add('active');
+				// Skip active state handling for certain buttons
+				if (this.id === 'theme_toggle' || this.id === 'color_settings' || 
+				    this.id === 'reset_canvas' || this.id === 'toggle_labels') {
+					return;
 				}
+				
+				document.querySelectorAll('.tool-btn').forEach(b => {
+					if (b.id !== 'theme_toggle' && b.id !== 'color_settings' && 
+					    b.id !== 'reset_canvas' && b.id !== 'toggle_labels') {
+						b.classList.remove('active');
+					}
+				});
+				this.classList.add('active');
 			});
 		});
 
@@ -608,9 +840,23 @@
 			pdf.save(`ai-search-${Date.now()}.pdf`);
 		});
 
-		// GIF export (placeholder - needs implementation with recording)
+		// GIF export - Initialize recorder
+		let gifRecorder = null;
 		document.getElementById('export_gif').addEventListener('click', () => {
-			alert('GIF recording will start when you click "Start Search". The recording will be automatically saved when the algorithm completes.');
+			if (!gifRecorder) {
+				const canvas = document.getElementById('canvas');
+				gifRecorder = new GifRecorder(canvas);
+				window.gifRecorder = gifRecorder;
+			}
+			
+			if (!gifRecorder.recording) {
+				gifRecorder.startRecording();
+				document.getElementById('export_gif').style.borderColor = '#ef4444';
+				alert('GIF recording started! Run the algorithm to capture frames. Recording will automatically save when the algorithm completes.');
+			} else {
+				gifRecorder.stopRecording();
+				document.getElementById('export_gif').style.borderColor = '';
+			}
 		});
 
 		// Zoom controls

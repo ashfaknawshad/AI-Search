@@ -19,13 +19,13 @@ class GifRecorder {
         this.frames = [];
         this.isRecording = true;
         
-        // Initialize gif.js
+        // Initialize gif.js with local worker script to avoid CORS issues
         this.gif = new GIF({
             workers: 2,
             quality: 10,
             width: this.canvas.width,
             height: this.canvas.height,
-            workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            workerScript: './gif.worker.js'
         });
 
         console.log('GIF recording started');
@@ -35,7 +35,10 @@ class GifRecorder {
      * Capture current canvas frame
      */
     captureFrame() {
+        console.log(`captureFrame called - isRecording: ${this.isRecording}, gif exists: ${!!this.gif}`);
+        
         if (!this.isRecording || !this.gif) {
+            console.log('Not recording or no GIF instance, skipping frame');
             return;
         }
 
@@ -55,7 +58,7 @@ class GifRecorder {
         });
 
         this.frames.push(frameCanvas);
-        console.log(`Captured frame ${this.frames.length}`);
+        console.log(`✓ Captured frame ${this.frames.length}`);
     }
 
     /**
