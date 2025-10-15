@@ -818,52 +818,46 @@ def show_search_results(success, path_cost, nodes_visited, time_taken):
     toast = document["search-results-toast"]
     stats_div = document["search-stats"]
     
-    # Build stats HTML
+    # Build stats HTML with minimal styling
     if success:
         stats_html = f"""
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="target" style="width: 16px; height: 16px;"></i>
-                <span><strong>Status:</strong> Goal Found!</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">●</span>
+                <span>Goal Found</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="route" style="width: 16px; height: 16px;"></i>
-                <span><strong>Path Cost:</strong> {path_cost}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">Path:</span>
+                <span style="color: #f1f5f9; font-weight: 500;">{path_cost} edges</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
-                <span><strong>Nodes Visited:</strong> {nodes_visited}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">Visited:</span>
+                <span style="color: #f1f5f9; font-weight: 500;">{nodes_visited} nodes</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
-                <span><strong>Time:</strong> {time_taken}s</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">Time:</span>
+                <span style="color: #f1f5f9; font-weight: 500;">{time_taken}s</span>
             </div>
         """
     else:
         stats_html = f"""
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i>
-                <span><strong>Status:</strong> No Path Found</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">●</span>
+                <span>No Path Found</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
-                <span><strong>Nodes Visited:</strong> {nodes_visited}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">Visited:</span>
+                <span style="color: #f1f5f9; font-weight: 500;">{nodes_visited} nodes</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
-                <span><strong>Time:</strong> {time_taken}s</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #94a3b8;">Time:</span>
+                <span style="color: #f1f5f9; font-weight: 500;">{time_taken}s</span>
             </div>
         """
     
     stats_div.innerHTML = stats_html
     toast.style.display = "block"
     
-    # Refresh Lucide icons in the toast
-    window.lucide.createIcons()
-    
-    # Auto-hide after 8 seconds
-    def hide_toast():
-        toast.style.display = "none"
-    window.setTimeout(hide_toast, 8000)
+    # No auto-hide - stays until user closes it
 
 
 def select_tool(tool_name):

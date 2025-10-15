@@ -882,37 +882,40 @@
 		position: fixed;
 		bottom: 80px;
 		right: 20px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: rgba(30, 41, 59, 0.95);
+		backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
 		color: white;
-		padding: 20px 24px;
+		padding: 16px 20px;
 		border-radius: 12px;
-		box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 		display: none;
-		min-width: 280px;
+		min-width: 260px;
 		z-index: 10000;
 		animation: slideInRight 0.3s ease-out;
 	">
-		<div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 12px;">
+		<div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 10px;">
 			<div style="display: flex; align-items: center; gap: 8px;">
-				<i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
-				<div style="font-weight: 600; font-size: 16px;">Search Complete</div>
+				<i data-lucide="info" style="width: 18px; height: 18px; color: #667eea;"></i>
+				<div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Search Results</div>
 			</div>
 			<button onclick="document.getElementById('search-results-toast').style.display='none'" style="
-				background: rgba(255,255,255,0.2);
+				background: rgba(255, 255, 255, 0.1);
 				border: none;
-				color: white;
-				width: 24px;
-				height: 24px;
-				border-radius: 50%;
+				color: #cbd5e1;
+				width: 20px;
+				height: 20px;
+				border-radius: 4px;
 				cursor: pointer;
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				font-size: 16px;
+				font-size: 14px;
 				line-height: 1;
-			">×</button>
+				transition: all 0.2s;
+			" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
 		</div>
-		<div id="search-stats" style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+		<div id="search-stats" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #cbd5e1;">
 			<!-- Stats will be injected here -->
 		</div>
 	</div>
