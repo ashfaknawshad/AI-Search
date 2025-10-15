@@ -9,6 +9,7 @@ class SearchAgent(object):
         super(SearchAgent, self).__init__()
         self.__agent_status = "idle"
         self.graph = graph
+        self.nodes_visited = 0  # Track number of nodes visited during search
 
     ################################################
     ########		Search Algorithms		########
@@ -334,6 +335,7 @@ class SearchAgent(object):
         if self.__agent_status == "searching":
             return False
         self.__agent_status = "searching"
+        self.nodes_visited = 0  # Reset counter at start of search
         return True
 
     # To reset the grid to its initial state
@@ -347,6 +349,9 @@ class SearchAgent(object):
         return self.graph[node.name].state
 
     def set_node_state(self, node, state):
+        # Track visited nodes
+        if state == "visited" and self.graph[node.name].state != "visited":
+            self.nodes_visited += 1
         # Debug: log state changes so frontend can show them in console
         try:
             print(f"set_node_state: node={node.name} -> {state}")

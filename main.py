@@ -57,6 +57,8 @@ selected_search_algorithm = "breadth-first"
 # Animation and search
 start_date = 0
 search_generator = None
+nodes_visited_count = 0
+search_start_time = 0
 
 # Undo/Redo functionality
 history_stack = []
@@ -762,6 +764,26 @@ def animation_loop(event=None):
                     document["solve"].disabled = False
                 except Exception:
                     pass
+                
+                # Calculate search statistics
+                search_end_time = javascript.Date.now()
+                time_taken = round((search_end_time - search_start_time) / 1000, 2)
+                
+                # Get result details
+                success = search_agent.agent_status == "success"
+                nodes_visited = search_agent.nodes_visited
+                path_cost = 0
+                
+                if success:
+                    # Find goal node to get path cost
+                    for node in search_agent.graph.values():
+                        if node.state == "path" or node.state == "goal":
+                            path_cost = len([n for n in search_agent.graph.values() if n.state == "path"])
+                            break
+                
+                # Show search results toast
+                show_search_results(success, path_cost, nodes_visited, time_taken)
+                
                 # Make sure the final graph state (path) is drawn
                 graph_updated = True
                 # Immediately redraw so the solution path appears right away
@@ -790,6 +812,59 @@ def animation_loop(event=None):
 ########################################
 ########    UI Interactions     ########
 ########################################
+
+def show_search_results(success, path_cost, nodes_visited, time_taken):
+    """Show search results in a toast notification"""
+    toast = document["search-results-toast"]
+    stats_div = document["search-stats"]
+    
+    # Build stats HTML
+    if success:
+        stats_html = f"""
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="target" style="width: 16px; height: 16px;"></i>
+                <span><strong>Status:</strong> Goal Found!</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="route" style="width: 16px; height: 16px;"></i>
+                <span><strong>Path Cost:</strong> {path_cost}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+                <span><strong>Nodes Visited:</strong> {nodes_visited}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                <span><strong>Time:</strong> {time_taken}s</span>
+            </div>
+        """
+    else:
+        stats_html = f"""
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i>
+                <span><strong>Status:</strong> No Path Found</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+                <span><strong>Nodes Visited:</strong> {nodes_visited}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                <span><strong>Time:</strong> {time_taken}s</span>
+            </div>
+        """
+    
+    stats_div.innerHTML = stats_html
+    toast.style.display = "block"
+    
+    # Refresh Lucide icons in the toast
+    window.lucide.createIcons()
+    
+    # Auto-hide after 8 seconds
+    def hide_toast():
+        toast.style.display = "none"
+    window.setTimeout(hide_toast, 8000)
+
 
 def select_tool(tool_name):
     global selected_tool
@@ -880,7 +955,7 @@ def update_weight():
 
 
 def start_search():
-    global search_generator, start_date, gif_recorder, graph_updated
+    global search_generator, start_date, search_start_time, gif_recorder, graph_updated
     
     # Check if there's a goal
     has_goal = False
@@ -906,6 +981,10 @@ def start_search():
     
     if selected_search_algorithm in algorithms:
         print(f"Starting {selected_search_algorithm} search...")
+        
+        # Record search start time
+        search_start_time = javascript.Date.now()
+        
         search_generator = algorithms[selected_search_algorithm]()
         # Debug: show generator object
         try:
