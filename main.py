@@ -836,6 +836,7 @@ def show_search_results(success, path_cost, nodes_visited, time_taken):
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="color: #94a3b8;">Time:</span>
                 <span style="color: #f1f5f9; font-weight: 500;">{time_taken}s</span>
+                <i data-lucide="info" class="time-info-icon" data-tippy-content="Time includes visualization delays (animation speed). Actual algorithm computation is nearly instantaneous." style="width: 14px; height: 14px; color: #64748b; cursor: help; margin-left: 4px;"></i>
             </div>
         """
     else:
@@ -851,11 +852,21 @@ def show_search_results(success, path_cost, nodes_visited, time_taken):
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="color: #94a3b8;">Time:</span>
                 <span style="color: #f1f5f9; font-weight: 500;">{time_taken}s</span>
+                <i data-lucide="info" class="time-info-icon" data-tippy-content="Time includes visualization delays (animation speed). Actual algorithm computation is nearly instantaneous." style="width: 14px; height: 14px; color: #64748b; cursor: help; margin-left: 4px;"></i>
             </div>
         """
     
     stats_div.innerHTML = stats_html
     toast.style.display = "block"
+    
+    # Reinitialize Lucide icons and Tippy tooltips for the new content
+    window.lucide.createIcons()
+    window.tippy('[data-tippy-content]', {
+        'placement': 'top',
+        'animation': 'scale',
+        'duration': 200,
+        'zIndex': 10001,
+    })
     
     # No auto-hide - stays until user closes it
 
