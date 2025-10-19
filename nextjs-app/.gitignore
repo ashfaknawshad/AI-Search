@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Override parent .gitignore - we NEED the lib folder for Next.js
+!lib/
+
 # dependencies
 /node_modules
 /.pnp
