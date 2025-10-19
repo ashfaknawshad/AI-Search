@@ -4,15 +4,16 @@ import { NextResponse } from 'next/server';
 // GET a specific graph by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: graph, error } = await supabase
     .from('graphs')
     .select('*, profiles(full_name, email)')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error) {
@@ -30,8 +31,9 @@ export async function GET(
 // PUT - Update a graph
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -46,7 +48,7 @@ export async function PUT(
   const { data: existingGraph } = await supabase
     .from('graphs')
     .select('user_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!existingGraph || existingGraph.user_id !== user.id) {
@@ -63,7 +65,7 @@ export async function PUT(
       thumbnail_url: thumbnail || null,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -77,8 +79,9 @@ export async function PUT(
 // DELETE a graph
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -90,7 +93,7 @@ export async function DELETE(
   const { data: existingGraph } = await supabase
     .from('graphs')
     .select('user_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!existingGraph || existingGraph.user_id !== user.id) {
@@ -100,7 +103,7 @@ export async function DELETE(
   const { error } = await supabase
     .from('graphs')
     .delete()
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

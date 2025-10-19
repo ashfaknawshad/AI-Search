@@ -3,19 +3,20 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 
 interface SharePageProps {
-  params: {
+  params: Promise<{
     code: string;
-  };
+  }>;
 }
 
 export default async function SharePage({ params }: SharePageProps) {
+  const { code } = await params;
   const supabase = await createClient();
 
   // Get the graph from share code
   const { data: shareLink } = await supabase
     .from('shared_links')
     .select('graph_id, graphs(*, profiles(full_name, email))')
-    .eq('share_code', params.code)
+    .eq('share_code', code)
     .single();
 
   if (!shareLink || !shareLink.graphs) {
