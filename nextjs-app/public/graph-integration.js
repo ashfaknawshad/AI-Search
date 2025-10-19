@@ -1,0 +1,375 @@
+// Save/Load functionality for AI Search Visualizer
+(function() {
+  'use strict';
+
+  // Get URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const graphDataStr = urlParams.get('graphData');
+  const graphId = urlParams.get('graphId');
+  const readOnly = urlParams.get('readOnly') === 'true';
+
+  // Store graph ID if editing
+  window.currentGraphId = graphId;
+  window.isReadOnly = readOnly;
+  
+  // Track if graph has been saved
+  let hasUnsavedChanges = false;
+  let initialGraphState = null;
+
+  // Function to get current graph data from canvas
+  function getGraphData() {
+    try {
+      // Call Python function to get the graph state as JSON string
+      if (window.getGraphStateForSave) {
+        const jsonString = window.getGraphStateForSave();
+        
+        // Parse the JSON string to get a plain JavaScript object
+        const graphState = JSON.parse(jsonString);
+        
+        return graphState;
+      } else {
+        console.error('getGraphStateForSave function not found');
+      }
+    } catch (error) {
+      console.error('Error getting graph data:', error);
+      console.error(error.stack);
+    }
+    return null;
+  }
+
+  // Function to load graph data into canvas
+  function loadGraphData(graphData) {
+    try {
+      if (window.loadGraphStateFromSave && graphData) {
+        window.loadGraphStateFromSave(graphData);
+        console.log('Graph loaded successfully');
+      } else {
+        console.error('loadGraphStateFromSave function not found or no data provided');
+      }
+    } catch (error) {
+      console.error('Error loading graph data:', error);
+    }
+  }
+
+  // Function to generate thumbnail from canvas
+  function generateThumbnail() {
+    try {
+      // Get the Fabric.js canvas
+      const fabricCanvas = window.canvas;
+      if (!fabricCanvas) {
+        console.error('Canvas not found for thumbnail generation');
+        return null;
+      }
+
+      // Generate a data URL from the canvas
+      // Use JPEG for smaller file size, quality 0.7 is a good balance
+      const thumbnailDataURL = fabricCanvas.toDataURL({
+        format: 'jpeg',
+        quality: 0.7,
+        multiplier: 0.3 // Scale down to 30% for smaller thumbnail
+      });
+
+      console.log('Thumbnail generated, size:', thumbnailDataURL.length, 'characters');
+      return thumbnailDataURL;
+    } catch (error) {
+      console.error('Error generating thumbnail:', error);
+      return null;
+    }
+  }
+
+  // Add Back button (top-left corner)
+  function addBackButton() {
+    const backBtn = document.createElement('button');
+    backBtn.id = 'back-to-dashboard-btn';
+    backBtn.innerHTML = '<i data-lucide="arrow-left"></i><span>Back to Dashboard</span>';
+    backBtn.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    `;
+    
+    backBtn.addEventListener('mouseenter', function() {
+      this.style.background = '#f8fafc';
+      this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    });
+    
+    backBtn.addEventListener('mouseleave', function() {
+      this.style.background = '#ffffff';
+      this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+    });
+    
+    backBtn.addEventListener('click', function() {
+      // Check for unsaved changes
+      if (hasUnsavedChanges && !readOnly) {
+        if (confirm('You have unsaved changes. Do you want to save your graph before leaving?')) {
+          // Trigger save, then navigate
+          handleSave();
+          // The navigation will happen after save completes
+          return;
+        }
+      }
+      // Navigate back to dashboard
+      window.parent.postMessage({ type: 'NAVIGATE_BACK' }, '*');
+    });
+    
+    document.body.appendChild(backBtn);
+    
+    // Re-initialize Lucide icons
+    if (window.lucide && window.lucide.createIcons) {
+      window.lucide.createIcons();
+    }
+    
+    console.log('Back button added');
+  }
+
+  // Add Save button (separate from toolbar)
+  function addSaveButton() {
+    if (readOnly) return; // Don't add save button in read-only mode
+
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'save-graph-btn';
+    saveBtn.innerHTML = '<i data-lucide="save"></i><span>Save Graph</span>';
+    saveBtn.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+      transition: all 0.2s;
+    `;
+    
+    saveBtn.addEventListener('mouseenter', function() {
+      this.style.background = '#059669';
+      this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.4)';
+    });
+    
+    saveBtn.addEventListener('mouseleave', function() {
+      this.style.background = '#10b981';
+      this.style.boxShadow = '0 2px 8px rgba(16,185,129,0.3)';
+    });
+    
+    saveBtn.addEventListener('click', handleSave);
+    
+    document.body.appendChild(saveBtn);
+    
+    // Re-initialize Lucide icons
+    if (window.lucide && window.lucide.createIcons) {
+      window.lucide.createIcons();
+    }
+    
+    console.log('Save button added');
+  }
+
+  // Handle save button click
+  function handleSave() {
+    const graphData = getGraphData();
+    
+    if (!graphData) {
+      alert('Unable to get graph data. Please try again.');
+      return;
+    }
+
+    // Generate thumbnail
+    const thumbnail = generateThumbnail();
+    console.log('Thumbnail generated for save:', thumbnail ? thumbnail.substring(0, 50) + '...' : 'null');
+
+    // Send message to parent window (Next.js app)
+    window.parent.postMessage({
+      type: 'SAVE_GRAPH',
+      data: {
+        graphData: graphData,
+        graphId: window.currentGraphId
+      },
+      thumbnail: thumbnail
+    }, '*');
+    
+    // Mark as saved
+    hasUnsavedChanges = false;
+    initialGraphState = JSON.stringify(graphData);
+  }
+
+  // Load graph data if provided in URL
+  if (graphDataStr) {
+    try {
+      const graphData = JSON.parse(decodeURIComponent(graphDataStr));
+      console.log('Graph data from URL:', graphData);
+      // Store initial state
+      initialGraphState = JSON.stringify(graphData);
+      hasUnsavedChanges = false;
+      // Wait for Brython and canvas to be ready
+      setTimeout(() => {
+        loadGraphData(graphData);
+      }, 2000);
+    } catch (error) {
+      console.error('Error parsing graph data:', error);
+    }
+  }
+
+  // Disable editing tools in read-only mode
+  if (readOnly) {
+    setTimeout(() => {
+      const toolbar = document.querySelector('.floating-toolbar');
+      if (toolbar) {
+        const buttons = toolbar.querySelectorAll('.tool-btn');
+        buttons.forEach(btn => {
+          btn.style.opacity = '0.5';
+          btn.style.pointerEvents = 'none';
+        });
+      }
+      
+      // Add read-only indicator
+      const indicator = document.createElement('div');
+      indicator.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f59e0b;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 999;
+      `;
+      indicator.textContent = '👁️ Read-Only Mode';
+      document.body.appendChild(indicator);
+    }, 500);
+  }
+
+  // Initialize when DOM is ready
+  console.log('Graph integration script loaded');
+  console.log('Read-only mode:', readOnly);
+  console.log('Graph ID:', graphId);
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, waiting 1 second to add buttons...');
+      setTimeout(function() {
+        addBackButton();
+        addSaveButton();
+      }, 1000);
+    });
+  } else {
+    console.log('DOM already loaded, waiting 1 second to add buttons...');
+    setTimeout(function() {
+      addBackButton();
+      addSaveButton();
+    }, 1000);
+  }
+
+  // Track changes to the graph
+  function trackChanges() {
+    if (readOnly) return;
+    
+    let previousChangeState = false;
+    
+    // Initialize the initial state after canvas is ready
+    setTimeout(() => {
+      if (!initialGraphState && !graphDataStr) {
+        // For new graphs, capture initial empty state
+        const emptyState = getGraphData();
+        if (emptyState) {
+          initialGraphState = JSON.stringify(emptyState);
+          console.log('Initial empty state captured for new graph');
+        }
+      }
+    }, 1000);
+    
+    // Set up interval to check for changes
+    setInterval(() => {
+      const currentState = getGraphData();
+      let currentlyHasChanges = false;
+      
+      if (currentState && initialGraphState) {
+        const currentStateStr = JSON.stringify(currentState);
+        if (currentStateStr !== initialGraphState) {
+          currentlyHasChanges = true;
+          
+          // Debug: Log the difference
+          if (currentStateStr.length !== initialGraphState.length) {
+            console.log('State changed - length difference:', currentStateStr.length, 'vs', initialGraphState.length);
+          } else {
+            // Find first difference
+            for (let i = 0; i < currentStateStr.length; i++) {
+              if (currentStateStr[i] !== initialGraphState[i]) {
+                console.log('State changed at position', i, '- current:', currentStateStr.substring(i, i + 50), 'initial:', initialGraphState.substring(i, i + 50));
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      hasUnsavedChanges = currentlyHasChanges;
+      
+      // Notify parent window if state changed
+      if (currentlyHasChanges !== previousChangeState) {
+        console.log('Change state updated:', currentlyHasChanges ? 'HAS CHANGES' : 'NO CHANGES');
+        window.parent.postMessage({
+          type: 'HAS_UNSAVED_CHANGES',
+          hasChanges: currentlyHasChanges
+        }, '*');
+        previousChangeState = currentlyHasChanges;
+      }
+    }, 2000); // Check every 2 seconds
+  }
+  
+  // Start tracking after canvas is ready
+  setTimeout(trackChanges, 3000);
+
+  // Prevent accidental page reload/close with unsaved changes
+  window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges && !readOnly) {
+      e.preventDefault();
+      // Chrome requires returnValue to be set
+      e.returnValue = '';
+      return '';
+    }
+  });
+
+  // Listen for messages from parent (if needed for future features)
+  window.addEventListener('message', function(event) {
+    if (event.data.type === 'SAVE_SUCCESS') {
+      // Mark as saved after successful save
+      hasUnsavedChanges = false;
+      const currentData = getGraphData();
+      if (currentData) {
+        initialGraphState = JSON.stringify(currentData);
+      }
+      // Notify parent that changes are now saved
+      window.parent.postMessage({
+        type: 'HAS_UNSAVED_CHANGES',
+        hasChanges: false
+      }, '*');
+    } else if (event.data.type === 'SAVE_ERROR') {
+      alert('Error saving graph: ' + event.data.error);
+    }
+  });
+
+})();

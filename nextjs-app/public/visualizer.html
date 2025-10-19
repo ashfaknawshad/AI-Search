@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>AI Search Visualizer</title>
+	<link rel="icon" href="favicon.jpg">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Brython 3.9 JS -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.9.1/brython.min.js"></script>
+	
+	<!-- Fabric.js for infinite canvas -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+	
+	<!-- Tailwind CSS -->
+	<script src="https://cdn.tailwindcss.com"></script>
+	
+	<!-- Lucide Icons -->
+	<script src="https://unpkg.com/lucide@latest"></script>
+	
+	<!-- Tippy.js for tooltips -->
+	<script src="https://unpkg.com/@popperjs/core@2"></script>
+	<script src="https://unpkg.com/tippy.js@6"></script>
+	<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+	
+	<!-- GIF.js for GIF export -->
+	<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+	
+	<!-- jsPDF for PDF export -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	
+	<!-- html2canvas for canvas capture -->
+	<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+	<!-- GIF Recorder module -->
+	<script src="gif-recorder.js"></script>
+
+	<script type="text/python" src="main.py?v=3.6"></script>
+	<script src="graph-integration.js?v=1.4"></script>
+
+	<style>
+		:root {
+			--bg-gradient-start: #1e293b;
+			--bg-gradient-end: #334155;
+			--canvas-bg: #0f172a;
+			--panel-bg: rgba(255, 255, 255, 0.95);
+			--panel-text: #1e293b;
+			--border-color: #e2e8f0;
+			--text-secondary: #64748b;
+		}
+
+		body.light-mode {
+			--bg-gradient-start: #e0f2fe;
+			--bg-gradient-end: #bae6fd;
+			--canvas-bg: #f8fafc;
+			--panel-bg: rgba(255, 255, 255, 0.95);
+			--panel-text: #1e293b;
+			--border-color: #cbd5e1;
+			--text-secondary: #475569;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			overflow: hidden;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+			background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+			transition: background 0.3s ease;
+		}
+
+		#canvas-container {
+			width: 100vw;
+			height: 100vh;
+			position: relative;
+			cursor: grab;
+		}
+
+		#canvas-container:active {
+			cursor: grabbing;
+		}
+
+		#canvas-container.dragging-node {
+			cursor: move !important;
+		}
+
+		.floating-toolbar {
+			position: fixed;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: var(--panel-bg);
+			backdrop-filter: blur(10px);
+			border-radius: 16px;
+			padding: 12px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+			z-index: 1000;
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+			max-width: 90vw;
+		}
+
+		.tool-btn {
+			width: 48px;
+			height: 48px;
+			border-radius: 12px;
+			border: 2px solid transparent;
+			background: white;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			position: relative;
+			color: var(--text-secondary);
+		}
+
+		.tool-btn:hover {
+			transform: scale(1.15);
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+		}
+
+		.tool-btn.active {
+			border-color: #3b82f6;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+		}
+
+		.tool-btn svg {
+			width: 24px;
+			height: 24px;
+		}
+
+		.divider {
+			width: 2px;
+			background: var(--border-color);
+			margin: 0 4px;
+		}
+
+		.bottom-panel {
+			position: fixed;
+			bottom: 12px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: var(--panel-bg);
+			backdrop-filter: blur(10px);
+			border-radius: 12px;
+			padding: 10px 16px;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			cursor: pointer;
+			transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.bottom-panel.expanded {
+			cursor: default;
+			padding: 16px 20px;
+			max-width: 90vw;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+			transform: translateX(-50%) translateY(-10px) scale(1.02);
+		}
+
+		.panel-compact {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.bottom-panel.expanded .panel-compact {
+			display: none;
+		}
+
+		.panel-expanded {
+			display: none;
+			opacity: 0;
+			animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		}
+
+		.bottom-panel.expanded .panel-expanded {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		@keyframes fadeSlideIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.selected-algorithm {
+			padding: 6px 12px;
+			border-radius: 6px;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+			font-size: 13px;
+			font-weight: 600;
+			white-space: nowrap;
+		}
+
+		.algorithm-section {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.section-title {
+			font-size: 10px;
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.3px;
+			white-space: nowrap;
+		}
+
+		.algo-buttons {
+			display: flex;
+			gap: 4px;
+			flex-wrap: wrap;
+		}
+
+		.algo-btn {
+			padding: 6px 12px;
+			border-radius: 6px;
+			border: 1.5px solid var(--border-color);
+			background: white;
+			cursor: pointer;
+			font-size: 11px;
+			font-weight: 500;
+			color: var(--panel-text);
+			transition: all 0.2s;
+			white-space: nowrap;
+		}
+
+		.algo-btn:hover {
+			border-color: #3b82f6;
+			color: #3b82f6;
+			transform: translateY(-1px);
+		}
+
+		.algo-btn.active {
+			border-color: #3b82f6;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+		}
+
+		.solve-btn {
+			padding: 8px 20px;
+			border-radius: 8px;
+			border: none;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+			font-weight: 600;
+			font-size: 13px;
+			cursor: pointer;
+			transition: all 0.3s;
+			white-space: nowrap;
+			flex-shrink: 0;
+		}
+
+		.solve-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+		}
+
+		.panel-divider {
+			width: 1px;
+			height: 30px;
+			background: var(--border-color);
+			flex-shrink: 0;
+		}
+
+		.expand-hint {
+			font-size: 10px;
+			color: #94a3b8;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.expand-hint svg {
+			width: 12px;
+			height: 12px;
+		}
+
+	.export-panel {
+		position: fixed;
+		top: 80px;
+		right: 20px;
+		background: var(--panel-bg);
+		backdrop-filter: blur(10px);
+		border-radius: 16px;
+		padding: 12px;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		z-index: 999;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}		.export-btn {
+			padding: 10px 16px;
+			border-radius: 8px;
+			border: 2px solid var(--border-color);
+			background: white;
+			cursor: pointer;
+			font-size: 13px;
+			font-weight: 500;
+			color: var(--panel-text);
+			transition: all 0.2s;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.export-btn:hover {
+			border-color: #10b981;
+			color: #10b981;
+			transform: translateX(-4px);
+		}
+
+		.help-btn {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			width: 56px;
+			height: 56px;
+			border-radius: 50%;
+			border: none;
+			background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+			color: white;
+			cursor: pointer;
+			box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+			transition: all 0.3s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.help-btn:hover {
+			transform: scale(1.1) rotate(15deg);
+		}
+
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.6);
+			backdrop-filter: blur(4px);
+			z-index: 2000;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.modal.active {
+			display: flex;
+		}
+
+		.modal-content {
+			background: white;
+			border-radius: 20px;
+			padding: 32px;
+			max-width: 600px;
+			max-height: 80vh;
+			overflow-y: auto;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			animation: modalSlideIn 0.3s ease-out;
+		}
+
+		@keyframes modalSlideIn {
+			from {
+				opacity: 0;
+				transform: translateY(-50px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+		}
+
+		.modal-title {
+			font-size: 24px;
+			font-weight: 700;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background-clip: text;
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			width: 32px;
+			height: 32px;
+			border-radius: 8px;
+			border: none;
+			background: #f1f5f9;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s;
+		}
+
+		.close-btn:hover {
+			background: #e2e8f0;
+			transform: rotate(90deg);
+		}
+
+		.zoom-controls {
+			position: fixed;
+			bottom: 20px;
+			left: 20px;
+			background: var(--panel-bg);
+			backdrop-filter: blur(10px);
+			border-radius: 12px;
+			padding: 8px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+			z-index: 1000;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.zoom-btn {
+			width: 40px;
+			height: 40px;
+			border-radius: 8px;
+			border: 2px solid var(--border-color);
+			background: white;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s;
+			color: var(--text-secondary);
+		}
+
+		.zoom-btn:hover {
+			border-color: #3b82f6;
+			color: #3b82f6;
+			transform: scale(1.1);
+		}
+	</style>
+</head>
+
+<body onload="brython({cache: 'none', pythonpath: ['.']})">
+
+	<!-- Floating Toolbar -->
+	<div class="floating-toolbar">
+		<!-- Tools Section -->
+		<button class="tool-btn active" id="add_node" data-tippy-content="Add Node (Click on canvas)">
+			<i data-lucide="plus-circle"></i>
+		</button>
+		
+		<button class="tool-btn" id="add_edge" data-tippy-content="Add Edge (Click two nodes)">
+			<i data-lucide="git-branch"></i>
+		</button>
+		<button class="tool-btn" id="delete_node" data-tippy-content="Delete Node">
+			<i data-lucide="trash-2"></i>
+		</button>
+		<button class="tool-btn" id="delete_edge" data-tippy-content="Delete Edge">
+			<i data-lucide="scissors"></i>
+		</button>
+		
+		<div class="divider"></div>
+		
+
+		
+		
+		<button class="tool-btn" id="toggle_goal" data-tippy-content="Toggle Goal State">
+			<i data-lucide="flag"></i>
+		</button>
+		<button class="tool-btn" id="update_heuristic" data-tippy-content="Set Heuristic">
+			<i data-lucide="hash"></i>
+		</button>
+		<button class="tool-btn" id="update_weight" data-tippy-content="Set Edge Weight">
+			<i data-lucide="weight"></i>
+		</button>
+		
+	
+	<div class="divider"></div>
+	
+	<button class="tool-btn" id="move_node" data-tippy-content="Move (Drag nodes or pan canvas)">
+		<i data-lucide="move"></i>
+	</button>
+
+	<button class="tool-btn active" id="toggle_labels" data-tippy-content="Toggle Heuristics & Weights Display">
+		<i data-lucide="eye"></i>
+	</button>
+			
+		<button class="tool-btn" id="reset_canvas" data-tippy-content="Reset Canvas (Clear All)" style="color: #ef4444;">
+			<i data-lucide="refresh-cw"></i>
+		</button>
+		
+		<!-- Color Customization -->
+		<button class="tool-btn" id="color_settings" data-tippy-content="Customize Node Colors">
+			<i data-lucide="palette"></i>
+		</button>
+	</div>
+
+	<!-- Export Panel -->
+	<div class="export-panel">
+		<button class="export-btn" id="export_png">
+			<i data-lucide="image"></i>
+			PNG
+		</button>
+		<button class="export-btn" id="export_gif">
+			<i data-lucide="film"></i>
+			GIF
+		</button>
+		<button class="export-btn" id="export_pdf">
+			<i data-lucide="file-text"></i>
+			PDF
+		</button>
+	</div>
+
+	<!-- Canvas Container -->
+	<div id="canvas-container">
+		<canvas id="canvas"></canvas>
+	</div>
+
+	<!-- Zoom Controls -->
+	<div class="zoom-controls">
+		<button class="zoom-btn" id="zoom_in" data-tippy-content="Zoom In">
+			<i data-lucide="zoom-in"></i>
+		</button>
+		<button class="zoom-btn" id="zoom_reset" data-tippy-content="Reset View">
+			<i data-lucide="maximize"></i>
+		</button>
+		<button class="zoom-btn" id="zoom_out" data-tippy-content="Zoom Out">
+			<i data-lucide="zoom-out"></i>
+		</button>
+		
+		<div style="width: 100%; height: 2px; background: var(--border-color); margin: 4px 0;"></div>
+		
+		<!-- Theme Toggle -->
+		<button class="zoom-btn" id="theme_toggle" data-tippy-content="Toggle Dark/Light Mode">
+			<i data-lucide="moon" id="theme_icon"></i>
+		</button>
+	</div>
+
+	<!-- Bottom Panel (Algorithms) -->
+	<div class="bottom-panel" id="algorithm-panel">
+		<!-- Compact View (Default) -->
+		<div class="panel-compact">
+			<span class="selected-algorithm" id="selected-algo-display">Breadth First Search</span>
+			<button class="solve-btn" id="solve"> Start Solving </button>
+			<span class="expand-hint">
+				<i data-lucide="chevrons-up"></i>
+				Click to change
+			</span>
+		</div>
+
+		<!-- Expanded View (Shows on click) -->
+		<div class="panel-expanded">
+			<div class="algorithm-section">
+				<div class="section-title">Uninformed:</div>
+				<div class="algo-buttons">
+					<button class="algo-btn active" id="breadth-first" data-name="Breadth First Search">Breadth First Search</button>
+					<button class="algo-btn" id="depth-first" data-name="Depth First Search">Depth First Search</button>
+					<button class="algo-btn" id="depth-limit" data-name="Depth Limited Search">Depth Limited Search</button>
+					<button class="algo-btn" id="iterative-deepening" data-name="Iterative Deepening">Iterative Deepening</button>
+					<button class="algo-btn" id="uniform-cost" data-name="Uniform Cost Search">Uniform Cost Search</button>
+					<button class="algo-btn" id="bidirectional" data-name="Bidirectional Search">Bidirectional Search</button>
+				</div>
+			</div>
+			
+			<div style="display: flex; gap: 12px; align-items: center;">
+				<div class="panel-divider"></div>
+				
+				<div class="algorithm-section">
+					<div class="section-title">Informed:</div>
+					<div class="algo-buttons">
+						<button class="algo-btn" id="greedy" data-name="Greedy Best First">Greedy Best First</button>
+						<button class="algo-btn" id="a*" data-name="A* Search">A* Search</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Help Button -->
+	<button class="help-btn" id="help_btn" data-tippy-content="Help & Instructions">
+		<i data-lucide="help-circle"></i>
+	</button>
+
+	<!-- Help Modal -->
+	<div class="modal" id="help-modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 class="modal-title">Help & Instructions</h2>
+				<button class="close-btn" id="close_help">
+					<i data-lucide="x"></i>
+				</button>
+			</div>
+			<div class="modal-body">
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Building Your Graph</h3>
+				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
+					<li><strong>Add Node:</strong> Click anywhere on the canvas</li>
+					<li><strong>Add Edge:</strong> Click two nodes to connect them</li>
+					<li><strong>Delete Node/Edge:</strong> Select the tool, then click the target</li>
+					<li><strong>Set Goal:</strong> Click on any node (except source) to toggle goal state</li>
+					<li><strong>Set Weights:</strong> Click the edge weight text to modify</li>
+					<li><strong>Set Heuristics:</strong> Click nodes to set their heuristic values</li>
+				</ul>
+
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Navigation</h3>
+				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
+					<li><strong>Pan:</strong> Right-click or middle-click and drag on empty canvas space</li>
+					<li><strong>Zoom:</strong> Use mouse wheel or zoom controls</li>
+					<li><strong>Reset View:</strong> Click the maximize icon in zoom controls</li>
+				</ul>
+
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Running Algorithms</h3>
+				<ul style="margin-bottom: 24px; padding-left: 20px; color: #475569; line-height: 1.8;">
+					<li>Select an algorithm from the bottom panel</li>
+					<li>Click "Start Search" to visualize the algorithm</li>
+					<li>Watch as nodes turn purple (visited) and orange (solution path)</li>
+				</ul>
+
+				<h3 style="margin-bottom: 12px; font-weight: 600; color: #1e293b;">Exporting</h3>
+				<ul style="padding-left: 20px; color: #475569; line-height: 1.8;">
+					<li><strong>PNG:</strong> Export current view as image</li>
+					<li><strong>GIF:</strong> Record the algorithm animation</li>
+					<li><strong>PDF:</strong> Save as PDF document</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<!-- Weights Input Modal -->
+	<dialog id="weights-modal" style="border: none; border-radius: 16px; padding: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+		<form id="weights-form">
+			<h3 style="margin-bottom: 16px; font-weight: 600;">Enter Value</h3>
+			<div style="display: flex; gap: 12px; align-items: center;">
+				<input id="weights-input" type="number" placeholder="1" min="1" required
+					style="padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; width: 120px;">
+				<button id="weights-update" type="button" 
+					style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 500; cursor: pointer;">
+					Update
+				</button>
+				<button id="weights-close" type="button"
+					style="padding: 10px 20px; border: 2px solid #e2e8f0; border-radius: 8px; background: white; color: #475569; font-weight: 500; cursor: pointer;">
+					Cancel
+				</button>
+			</div>
+		</form>
+	</dialog>
+
+	<!-- Color Settings Modal -->
+	<dialog id="color-modal" style="border: none; border-radius: 20px; padding: 32px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); min-width: 400px;">
+		<div style="margin-bottom: 24px;">
+			<h3 style="font-weight: 600; font-size: 20px; margin-bottom: 8px;">Customize Node Colors</h3>
+			<p style="color: #64748b; font-size: 13px;">Choose colors for different node states</p>
+		</div>
+		
+		<div style="display: flex; flex-direction: column; gap: 20px;">
+			<!-- Start Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">S</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Start Node</div>
+						<div style="font-size: 12px; color: #64748b;">Source node color</div>
+					</div>
+				</div>
+				<input type="color" id="color-source" value="#ef4444" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Goal Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">G</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Goal Node</div>
+						<div style="font-size: 12px; color: #64748b;">Target node color</div>
+					</div>
+				</div>
+				<input type="color" id="color-goal" value="#10b981" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Empty/Passive Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #cbd5e1;">○</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Passive Node</div>
+						<div style="font-size: 12px; color: #64748b;">Unvisited nodes</div>
+					</div>
+				</div>
+				<input type="color" id="color-empty" value="#ffffff" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Visited/Traversing Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">V</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Traversing Node</div>
+						<div style="font-size: 12px; color: #64748b;">Visited during search</div>
+					</div>
+				</div>
+				<input type="color" id="color-visited" value="#8b5cf6" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+			
+			<!-- Solution Path Node Color -->
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+						<span style="font-weight: 700; font-size: 12px; color: #1e293b;">P</span>
+					</div>
+					<div>
+						<div style="font-weight: 500; font-size: 14px; color: #1e293b;">Solution Path</div>
+						<div style="font-size: 12px; color: #64748b;">Final path nodes</div>
+					</div>
+				</div>
+				<input type="color" id="color-path" value="#f59e0b" 
+					style="width: 60px; height: 40px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+			</div>
+		</div>
+		
+		<div style="display: flex; gap: 12px; margin-top: 28px; justify-content: flex-end;">
+			<button id="color-reset" type="button"
+				style="padding: 10px 20px; border: 2px solid #e2e8f0; border-radius: 8px; background: white; color: #64748b; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+				Reset to Default
+			</button>
+			<button id="color-close" type="button"
+				style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+				Done
+			</button>
+		</div>
+	</dialog>
+
+	<script>
+		// Initialize Lucide icons
+		lucide.createIcons();
+
+		// Initialize Tippy tooltips
+		tippy('[data-tippy-content]', {
+			placement: 'bottom',
+			animation: 'scale',
+			duration: 200,
+		});
+
+		// Tool button interactions
+		document.querySelectorAll('.tool-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				// Skip active state handling for certain buttons
+				if (this.id === 'theme_toggle' || this.id === 'color_settings' || 
+				    this.id === 'reset_canvas' || this.id === 'toggle_labels') {
+					return;
+				}
+				
+				document.querySelectorAll('.tool-btn').forEach(b => {
+					if (b.id !== 'theme_toggle' && b.id !== 'color_settings' && 
+					    b.id !== 'reset_canvas' && b.id !== 'toggle_labels') {
+						b.classList.remove('active');
+					}
+				});
+				this.classList.add('active');
+			});
+		});
+
+		// Algorithm button interactions
+		document.querySelectorAll('.algo-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+				this.classList.add('active');
+			});
+		});
+
+		// Help modal
+		document.getElementById('help_btn').addEventListener('click', () => {
+			document.getElementById('help-modal').classList.add('active');
+			lucide.createIcons(); // Refresh icons in modal
+		});
+
+		document.getElementById('close_help').addEventListener('click', () => {
+			document.getElementById('help-modal').classList.remove('active');
+		});
+
+		document.getElementById('help-modal').addEventListener('click', (e) => {
+			if (e.target.id === 'help-modal') {
+				document.getElementById('help-modal').classList.remove('active');
+			}
+		});
+
+		// Export functionality
+		document.getElementById('export_png').addEventListener('click', () => {
+			const canvas = document.getElementById('canvas');
+			const link = document.createElement('a');
+			link.download = `ai-search-${Date.now()}.png`;
+			link.href = canvas.toDataURL();
+			link.click();
+		});
+
+		document.getElementById('export_pdf').addEventListener('click', async () => {
+			const canvas = document.getElementById('canvas');
+			const imgData = canvas.toDataURL('image/png');
+			const { jsPDF } = window.jspdf;
+			const pdf = new jsPDF({
+				orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+				unit: 'px',
+				format: [canvas.width, canvas.height]
+			});
+			pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+			pdf.save(`ai-search-${Date.now()}.pdf`);
+		});
+
+		// GIF export - Initialize recorder
+		let gifRecorder = null;
+		document.getElementById('export_gif').addEventListener('click', () => {
+			if (!gifRecorder) {
+				const canvas = document.getElementById('canvas');
+				gifRecorder = new GifRecorder(canvas);
+				window.gifRecorder = gifRecorder;
+			}
+			
+			if (!gifRecorder.recording) {
+				gifRecorder.startRecording();
+				document.getElementById('export_gif').style.borderColor = '#ef4444';
+				alert('GIF recording started! Run the algorithm to capture frames. Recording will automatically save when the algorithm completes.');
+			} else {
+				gifRecorder.stopRecording();
+				document.getElementById('export_gif').style.borderColor = '';
+			}
+		});
+
+		// Zoom controls
+		let zoomLevel = 1;
+		document.getElementById('zoom_in').addEventListener('click', () => {
+			zoomLevel = Math.min(zoomLevel + 0.2, 3);
+			// Apply zoom to canvas
+		});
+
+		document.getElementById('zoom_out').addEventListener('click', () => {
+			zoomLevel = Math.max(zoomLevel - 0.2, 0.3);
+			// Apply zoom to canvas
+		});
+
+		document.getElementById('zoom_reset').addEventListener('click', () => {
+			zoomLevel = 1;
+			// Reset canvas view
+		});
+	</script>
+
+	<!-- Search Results Toast -->
+	<div id="search-results-toast" style="
+		position: fixed;
+		bottom: 80px;
+		right: 20px;
+		background: rgba(30, 41, 59, 0.95);
+		backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		color: white;
+		padding: 16px 20px;
+		border-radius: 12px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+		display: none;
+		min-width: 260px;
+		z-index: 10000;
+		animation: slideInRight 0.3s ease-out;
+	">
+		<div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 10px;">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<i data-lucide="info" style="width: 18px; height: 18px; color: #667eea;"></i>
+				<div style="font-weight: 600; font-size: 14px; color: #f1f5f9;">Search Results</div>
+			</div>
+			<button onclick="document.getElementById('search-results-toast').style.display='none'" style="
+				background: rgba(255, 255, 255, 0.1);
+				border: none;
+				color: #cbd5e1;
+				width: 20px;
+				height: 20px;
+				border-radius: 4px;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 14px;
+				line-height: 1;
+				transition: all 0.2s;
+			" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+		</div>
+		<div id="search-stats" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #cbd5e1;">
+			<!-- Stats will be injected here -->
+		</div>
+	</div>
+
+	<style>
+		@keyframes slideInRight {
+			from {
+				transform: translateX(400px);
+				opacity: 0;
+			}
+			to {
+				transform: translateX(0);
+				opacity: 1;
+			}
+		}
+		
+	</style>
+
+	<!-- Graph Integration Script -->
+	<script src="graph-integration.js?v=1.4"></script>
+
+</body>
+
+</html>
