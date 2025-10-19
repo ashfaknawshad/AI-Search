@@ -451,6 +451,92 @@ def restore_state(state):
     graph_updated = True
 
 
+def get_graph_state_for_save():
+    """Export current graph state for saving to database - returns JSON string"""
+    global search_agent, node_counter, pan_x, pan_y, zoom_level
+    
+    # Build state as a simple string representation
+    graph_data = {}
+    
+    # Serialize all nodes and edges
+    for name, node in search_agent.graph.items():
+        # Convert name to string for JSON compatibility
+        key = str(name)
+        graph_data[key] = {
+            'name': int(node.name),
+            'position': [float(node.position[0]), float(node.position[1])],
+            'state': str(node.state),
+            'heuristic': float(node.heuristic),
+            'children': {str(k): float(v) for k, v in node.children.items()}
+        }
+    
+    state = {
+        'graph': graph_data,
+        'node_counter': int(node_counter),
+        'pan_x': float(pan_x),
+        'pan_y': float(pan_y),
+        'zoom_level': float(zoom_level)
+    }
+    
+    # Return as JSON string - JavaScript will parse it
+    return javascript.JSON.stringify(state)
+
+
+def load_graph_state_from_save(state):
+    """Load graph state from database"""
+    global search_agent, node_counter, pan_x, pan_y, zoom_level, graph_updated
+    global selected_node_name
+    
+    try:
+        # Restore node counter and view settings
+        node_counter = state['node_counter']
+        pan_x = state['pan_x']
+        pan_y = state['pan_y']
+        zoom_level = state['zoom_level']
+        
+        # Clear current graph
+        search_agent.graph.clear()
+        
+        # Convert JavaScript objects to Python dicts
+        graph_dict = state['graph'].to_dict() if hasattr(state['graph'], 'to_dict') else dict(state['graph'])
+        
+        # Restore all nodes
+        for name_str, node_data in graph_dict.items():
+            # Convert string keys back to integers
+            name = int(name_str) if str(name_str).isdigit() else name_str
+            
+            # Convert children JavaScript object to dict, then process keys
+            children_obj = node_data['children']
+            children_dict = children_obj.to_dict() if hasattr(children_obj, 'to_dict') else dict(children_obj)
+            
+            children = {}
+            for child_key, child_val in children_dict.items():
+                child_name = int(child_key) if str(child_key).isdigit() else child_key
+                children[child_name] = float(child_val)
+            
+            search_agent.graph[name] = Node(
+                int(node_data['name']),
+                tuple(node_data['position']),
+                state=node_data['state'],
+                children=children
+            )
+            search_agent.graph[name].heuristic = node_data['heuristic']
+        
+        # Clear selection
+        selected_node_name = unselected
+        graph_updated = True
+        
+        print(f"Graph loaded: {len(search_agent.graph)} nodes")
+    except Exception as e:
+        print(f"Error loading graph: {e}")
+        window.alert(f"Error loading graph: {e}")
+
+
+# Expose the functions to JavaScript
+window.getGraphStateForSave = get_graph_state_for_save
+window.loadGraphStateFromSave = load_graph_state_from_save
+
+
 ########################################
 ########     Tool Actions       ########
 ########################################
@@ -791,15 +877,30 @@ def animation_loop(event=None):
                     draw()
                 except Exception:
                     pass
-                # Auto-stop GIF recording if it was running
+                
+                # Capture final frames with solution path for GIF
                 try:
                     if window.gifRecorder and window.gifRecorder.recording:
-                        def stop_gif():
-                            window.gifRecorder.stopRecording()
-                            # Reset button border
-                            document["export_gif"].style.borderColor = ''
-                        # Delay to capture final frame
-                        window.setTimeout(stop_gif, 600)
+                        # Capture multiple frames of the solution to ensure it's visible
+                        def capture_solution_frames():
+                            window.gifRecorder.captureFrame()
+                            
+                            def capture_more():
+                                window.gifRecorder.captureFrame()
+                                
+                                def stop_gif():
+                                    window.gifRecorder.stopRecording()
+                                    # Reset button border
+                                    document["export_gif"].style.borderColor = ''
+                                
+                                # Stop after capturing solution frames
+                                window.setTimeout(stop_gif, 500)
+                            
+                            # Capture another frame
+                            window.setTimeout(capture_more, 500)
+                        
+                        # Start capturing solution frames after a brief delay
+                        window.setTimeout(capture_solution_frames, 200)
                 except:
                     pass
     

@@ -877,15 +877,30 @@ def animation_loop(event=None):
                     draw()
                 except Exception:
                     pass
-                # Auto-stop GIF recording if it was running
+                
+                # Capture final frames with solution path for GIF
                 try:
                     if window.gifRecorder and window.gifRecorder.recording:
-                        def stop_gif():
-                            window.gifRecorder.stopRecording()
-                            # Reset button border
-                            document["export_gif"].style.borderColor = ''
-                        # Delay to capture final frame
-                        window.setTimeout(stop_gif, 600)
+                        # Capture multiple frames of the solution to ensure it's visible
+                        def capture_solution_frames():
+                            window.gifRecorder.captureFrame()
+                            
+                            def capture_more():
+                                window.gifRecorder.captureFrame()
+                                
+                                def stop_gif():
+                                    window.gifRecorder.stopRecording()
+                                    # Reset button border
+                                    document["export_gif"].style.borderColor = ''
+                                
+                                # Stop after capturing solution frames
+                                window.setTimeout(stop_gif, 500)
+                            
+                            # Capture another frame
+                            window.setTimeout(capture_more, 500)
+                        
+                        # Start capturing solution frames after a brief delay
+                        window.setTimeout(capture_solution_frames, 200)
                 except:
                     pass
     
