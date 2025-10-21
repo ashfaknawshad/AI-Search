@@ -216,6 +216,12 @@ class SearchAgent(object):
             return
 
         self.reset_graph()
+
+        # Build a predecessor map for efficient backward search
+        predecessors = {name: [] for name in self.graph}
+        for name, node in self.graph.items():
+            for child_name in node.children:
+                predecessors[child_name].append(name)
         
         # Two frontiers: forward from start, backward from goal
         forward_fringe = [source]
@@ -273,12 +279,11 @@ class SearchAgent(object):
                     self.set_node_state(self.graph[node.name], "visited")
                     yield  # Yield after marking to show the node
                 
-                # Expand backward (find parents - nodes that have this as child)
-                for potential_parent in self.graph.values():
-                    if node.name in potential_parent.children:
-                        if potential_parent.name not in backward_visited:
-                            backward_visited[potential_parent.name] = node.name
-                            backward_fringe.append(potential_parent)
+                # Expand backward (MUCH faster using the map)
+                for parent_name in predecessors[node.name]:
+                    if parent_name not in backward_visited:
+                        backward_visited[parent_name] = node.name
+                        backward_fringe.append(self.graph[parent_name])
             
             forward_turn = not forward_turn
         
