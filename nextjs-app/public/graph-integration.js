@@ -235,14 +235,28 @@
     setTimeout(() => {
       const toolbar = document.querySelector('.floating-toolbar');
       if (toolbar) {
-        const buttons = toolbar.querySelectorAll('.tool-btn');
-        buttons.forEach(btn => {
-          btn.style.opacity = '0.5';
-          btn.style.pointerEvents = 'none';
-        });
+        // Hide the entire toolbar for a clean read-only view
+        toolbar.style.display = 'none';
+
+        // Ensure the active tool in the visualizer itself is 'move_node'
+        // so clicking the canvas doesn't create nodes.
+        try {
+          const addBtn = document.getElementById('add_node');
+          const moveBtn = document.getElementById('move_node');
+          if (addBtn) addBtn.classList.remove('active');
+          if (moveBtn) {
+            // Add active class visually (in case toolbar is later shown)
+            moveBtn.classList.add('active');
+            // Programmatically trigger the click to notify Brython handlers
+            moveBtn.click();
+          }
+          console.log('Toolbar hidden and move tool selected for read-only mode');
+        } catch (e) {
+          console.warn('Error setting move tool in read-only mode', e);
+        }
       }
-      
-      // Add read-only indicator
+
+      // Add read-only indicator (subtle) below the top area
       const indicator = document.createElement('div');
       indicator.style.cssText = `
         position: fixed;
