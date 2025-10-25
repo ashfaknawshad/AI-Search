@@ -1,34 +1,39 @@
-# AI Search Visualizer
+# AI Search Visualizer 🔍
 
-A full-stack web application for creating, visualizing, and sharing graph-based search algorithm demonstrations. Built with Next.js, Supabase, and Python (Brython).
+> **An interactive web platform for visualizing and understanding graph search algorithms through hands-on exploration**
+
+A modern full-stack application that brings computer science algorithms to life. Create custom graphs, run pathfinding algorithms in real-time, and share your visualizations with the community. Perfect for students learning AI search algorithms, educators creating demonstrations, or anyone curious about how algorithms explore problem spaces.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15.5.6-black)
 ![React](https://img.shields.io/badge/React-19.1.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)
 
 ## 🌟 Features
 
 ### Core Functionality
-- **Interactive Graph Visualizer** - Create nodes, connections, and visualize search algorithms in real-time
-- **Multiple Search Algorithms** - BFS, DFS, Dijkstra, A*, Greedy Best-First Search, and UCS
-- **Cloud Storage** - Save and load graphs with Supabase PostgreSQL
-- **Share Functionality** - Generate shareable links for your graphs
-- **Public Discovery** - Browse and explore graphs shared by the community
+- **Interactive Graph Editor** - Drag-and-drop interface to create nodes, edges, and weighted graphs
+- **6 Search Algorithms** - Visualize BFS, DFS, Dijkstra, A*, Greedy Best-First Search, and UCS with step-by-step execution
+- **Real-time Animation** - Watch algorithms explore the graph with visual feedback on visited nodes and optimal paths
+- **Cloud Persistence** - Save unlimited graphs to the cloud with Supabase PostgreSQL
+- **Share & Collaborate** - Generate unique shareable links with view tracking
+- **Public Gallery** - Discover and learn from community-created graph demonstrations
 
 ### User Experience
-- **Authentication** - Secure sign-up/login with Supabase Auth
-- **Personal Dashboard** - Manage all your saved graphs
-- **Thumbnails** - Visual previews of graphs in dashboard and explore pages
-- **Real-time Search** - Find public graphs with debounced search
-- **Unsaved Changes Protection** - Prompts before losing work
-- **Responsive Design** - Works on desktop, tablet, and mobile
+- **OAuth Authentication** - Seamless Google sign-in with Supabase Auth
+- **Personal Dashboard** - Grid view of all your graphs with thumbnails and metadata
+- **Smart Search** - Debounced search across public graphs
+- **Read-only Mode** - View shared graphs with toolbar hidden for clean presentation
+- **Unsaved Changes Protection** - Never lose work with browser navigation warnings
+- **Fully Responsive** - Optimized for desktop, tablet, and mobile devices
 
-### Technical Features
-- **Canvas-based Rendering** - Smooth, performant visualization with Fabric.js
-- **Python in Browser** - Brython enables Python-based algorithm execution
-- **Server-side Rendering** - Fast initial page loads with Next.js App Router
-- **Type Safety** - Full TypeScript implementation
+### Technical Highlights
+- **Canvas-based Rendering** - Hardware-accelerated visualization using HTML5 Canvas
+- **Python in Browser** - Run authentic Python algorithm code client-side via Brython
+- **Server-side Rendering** - Fast initial loads and SEO-friendly with Next.js 15 App Router
+- **Type-safe** - End-to-end TypeScript for reliability and maintainability
+- **Row Level Security** - Granular database permissions with Supabase RLS policies
 - **Modern Styling** - Tailwind CSS 4 with clean, minimalistic design
 
 ## 🚀 Quick Start
@@ -63,7 +68,11 @@ A full-stack web application for creating, visualizing, and sharing graph-based 
    
    Run this SQL in your Supabase SQL Editor:
    ```sql
-   -- Create graphs table
+   -- ============================================
+   -- TABLES
+   -- ============================================
+   
+   -- Graphs table: stores user-created graph visualizations
    create table graphs (
      id uuid default gen_random_uuid() primary key,
      user_id uuid references auth.users(id) on delete cascade not null,
@@ -78,37 +87,79 @@ A full-stack web application for creating, visualizing, and sharing graph-based 
      updated_at timestamp with time zone default timezone('utc'::text, now()) not null
    );
 
-   -- Enable Row Level Security
+   -- ============================================
+   -- ROW LEVEL SECURITY (RLS)
+   -- ============================================
+   
    alter table graphs enable row level security;
 
-   -- Policies
+   -- Allow users to view their own graphs
    create policy "Users can view their own graphs"
      on graphs for select
      using (auth.uid() = user_id);
 
+   -- Allow anyone to view public graphs
    create policy "Users can view public graphs"
      on graphs for select
      using (is_public = true);
 
+   -- Allow anyone to view graphs with share codes (for sharing)
+   create policy "Anyone can view graphs with share codes"
+     on graphs for select
+     using (share_code is not null);
+
+   -- Allow users to create their own graphs
    create policy "Users can insert their own graphs"
      on graphs for insert
      with check (auth.uid() = user_id);
 
+   -- Allow users to update their own graphs
    create policy "Users can update their own graphs"
      on graphs for update
      using (auth.uid() = user_id);
 
+   -- Allow users to delete their own graphs
    create policy "Users can delete their own graphs"
      on graphs for delete
      using (auth.uid() = user_id);
 
-   -- Indexes for performance
+   -- ============================================
+   -- INDEXES
+   -- ============================================
+   
    create index graphs_user_id_idx on graphs(user_id);
    create index graphs_share_code_idx on graphs(share_code);
    create index graphs_is_public_idx on graphs(is_public);
+   create index graphs_created_at_idx on graphs(created_at desc);
+
+   -- ============================================
+   -- FUNCTIONS
+   -- ============================================
+   
+   -- Function to increment view count (for share links)
+   create or replace function increment_graph_views(graph_id uuid)
+   returns void
+   language plpgsql
+   security definer
+   as $$
+   begin
+     update graphs
+     set view_count = coalesce(view_count, 0) + 1
+     where id = graph_id;
+   end;
+   $$;
    ```
 
-5. **Run the development server**
+5. **Add environment variables**
+   
+   Don't forget to add `SUPABASE_SERVICE_ROLE_KEY` to your `.env.local` for server-side operations:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   ```
+
+6. **Run the development server**
    ```bash
    npm run dev
    ```
