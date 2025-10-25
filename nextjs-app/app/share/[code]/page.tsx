@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -15,7 +15,7 @@ export default async function SharePage({ params }: SharePageProps) {
   // Get the graph from share code
   const { data: graph, error } = await supabase
     .from('graphs')
-    .select('*, profiles(full_name, email)')
+    .select('*')
     .eq('share_code', code)
     .single();
 
@@ -32,6 +32,18 @@ export default async function SharePage({ params }: SharePageProps) {
 
   if (!graph) {
     notFound();
+  }
+
+  // Get user info from auth.users using service client
+  let creatorName = 'Anonymous';
+  if (graph.user_id) {
+    const serviceClient = createServiceClient();
+    const { data: userData } = await serviceClient.auth.admin.getUserById(graph.user_id);
+    if (userData?.user) {
+      creatorName = userData.user.user_metadata?.full_name 
+        || userData.user.email?.split('@')[0] 
+        || 'Anonymous';
+    }
   }
 
   // Increment view count
@@ -66,9 +78,7 @@ export default async function SharePage({ params }: SharePageProps) {
             <p className="text-gray-600 mb-4">{graph.description}</p>
           )}
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>
-              Created by {graph.profiles?.full_name || graph.profiles?.email?.split('@')[0] || 'Anonymous'}
-            </span>
+            <span>Created by {creatorName}</span>
             <span>•</span>
             <span>
               {new Date(graph.created_at).toLocaleDateString('en-US', {
