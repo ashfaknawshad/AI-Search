@@ -13,17 +13,26 @@ export default async function SharePage({ params }: SharePageProps) {
   const supabase = await createClient();
 
   // Get the graph from share code
-  const { data: shareLink } = await supabase
-    .from('shared_links')
-    .select('graph_id, graphs(*, profiles(full_name, email))')
+  const { data: graph, error } = await supabase
+    .from('graphs')
+    .select('*, profiles(full_name, email)')
     .eq('share_code', code)
     .single();
 
-  if (!shareLink || !shareLink.graphs) {
+  console.log('Share code lookup:', { 
+    code, 
+    hasGraph: !!graph, 
+    error: error ? { 
+      message: error.message, 
+      details: error.details, 
+      hint: error.hint,
+      code: error.code 
+    } : null 
+  });
+
+  if (!graph) {
     notFound();
   }
-
-  const graph = Array.isArray(shareLink.graphs) ? shareLink.graphs[0] : shareLink.graphs;
 
   // Increment view count
   await supabase.rpc('increment_graph_views', { graph_id: graph.id });

@@ -7,9 +7,10 @@ import { copyToClipboard } from '@/lib/utils/helpers';
 
 interface GraphViewClientProps {
   graph: any;
+  isOwner: boolean;
 }
 
-export default function GraphViewClient({ graph }: GraphViewClientProps) {
+export default function GraphViewClient({ graph, isOwner }: GraphViewClientProps) {
   const router = useRouter();
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
@@ -110,19 +111,23 @@ export default function GraphViewClient({ graph }: GraphViewClientProps) {
               >
                 {loading ? 'Loading...' : 'Share'}
               </button>
-              <Link
-                href={`/dashboard/edit/${graph.id}`}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
-              >
-                Edit
-              </Link>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm disabled:opacity-50"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
+              {isOwner && (
+                <>
+                  <Link
+                    href={`/dashboard/edit/${graph.id}`}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm disabled:opacity-50"
+                  >
+                    {deleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

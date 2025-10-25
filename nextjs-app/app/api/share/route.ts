@@ -21,26 +21,29 @@ export async function POST(request: Request) {
     );
   }
 
-  // Verify ownership
-  const { data: graph } = await supabase
+  // Get the graph and verify ownership
+  const { data: graph, error: fetchError } = await supabase
     .from('graphs')
-    .select('user_id')
+    .select('id, user_id, share_code')
     .eq('id', graph_id)
     .single();
 
-  if (!graph || graph.user_id !== user.id) {
+  if (fetchError || !graph) {
+    return NextResponse.json({ error: 'Graph not found' }, { status: 404 });
+  }
+
+  if (graph.user_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Check if share link already exists
-  const { data: existingLink } = await supabase
-    .from('shared_links')
-    .select('*')
-    .eq('graph_id', graph_id)
-    .single();
-
-  if (existingLink) {
-    return NextResponse.json({ shareLink: existingLink });
+  // If share code already exists, return it
+  if (graph.share_code) {
+    return NextResponse.json({ 
+      shareLink: { 
+        share_code: graph.share_code,
+        graph_id: graph.id 
+      } 
+    });
   }
 
   // Generate unique share code
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
 
   while (attempts < maxAttempts) {
     const { data: existing } = await supabase
-      .from('shared_links')
+      .from('graphs')
       .select('share_code')
       .eq('share_code', shareCode)
       .single();
@@ -61,19 +64,36 @@ export async function POST(request: Request) {
     attempts++;
   }
 
-  // Create share link
-  const { data: shareLink, error } = await supabase
-    .from('shared_links')
-    .insert({
-      graph_id,
-      share_code: shareCode,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (attempts >= maxAttempts) {
+    return NextResponse.json(
+      { error: 'Failed to generate unique share code' },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ shareLink }, { status: 201 });
+  // Update graph with share code
+  const { data: updatedGraph, error: updateError } = await supabase
+    .from('graphs')
+    .update({ share_code: shareCode })
+    .eq('id', graph_id)
+    .select('share_code, id')
+    .single();
+
+  console.log('Share code update:', { 
+    graphId: graph_id,
+    shareCode, 
+    updatedGraph, 
+    error: updateError 
+  });
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ 
+    shareLink: { 
+      share_code: updatedGraph.share_code,
+      graph_id: updatedGraph.id 
+    } 
+  }, { status: 201 });
 }

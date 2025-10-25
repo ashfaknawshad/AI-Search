@@ -77,8 +77,43 @@
     }
   }
 
-  // Add Back button (top-left corner)
+  // Add Back button or Read-Only indicator (top-left corner)
   function addBackButton() {
+    if (readOnly) {
+      // In read-only mode, show indicator instead of back button
+      const indicator = document.createElement('div');
+      indicator.id = 'read-only-indicator';
+      indicator.innerHTML = '<i data-lucide="eye"></i><span>Read-Only Mode</span>';
+      indicator.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #ffffff;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      `;
+      
+      document.body.appendChild(indicator);
+      
+      // Re-initialize Lucide icons
+      if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+      }
+      
+      console.log('Read-only indicator added');
+      return;
+    }
+
+    // Normal edit mode - show back button
     const backBtn = document.createElement('button');
     backBtn.id = 'back-to-dashboard-btn';
     backBtn.innerHTML = '<i data-lucide="arrow-left"></i><span>Back to Dashboard</span>';
@@ -256,23 +291,7 @@
         }
       }
 
-      // Add read-only indicator (subtle) below the top area
-      const indicator = document.createElement('div');
-      indicator.style.cssText = `
-        position: fixed;
-        top: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #f59e0b;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        z-index: 999;
-      `;
-      indicator.textContent = '👁️ Read-Only Mode';
-      document.body.appendChild(indicator);
+      // Read-only indicator is now in top-left (handled by addBackButton)
     }, 500);
   }
 

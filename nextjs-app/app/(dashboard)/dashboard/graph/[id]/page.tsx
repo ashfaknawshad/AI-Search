@@ -29,8 +29,11 @@ export default async function GraphViewPage({ params }: GraphViewPageProps) {
     notFound();
   }
 
-  // Check if user owns this graph
-  if (graph.user_id !== user.id) {
+  // Check if user owns this graph OR if it's public
+  const isOwner = graph.user_id === user.id;
+  const isPublic = graph.is_public;
+
+  if (!isOwner && !isPublic) {
     return (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
@@ -41,5 +44,5 @@ export default async function GraphViewPage({ params }: GraphViewPageProps) {
     );
   }
 
-  return <GraphViewClient graph={graph} />;
+  return <GraphViewClient graph={graph} isOwner={isOwner} />;
 }
