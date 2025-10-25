@@ -975,6 +975,19 @@ def show_search_results(success, path_cost, nodes_visited, time_taken):
 def select_tool(tool_name):
     global selected_tool
     selected_tool = tool_name
+    
+    # Update UI to reflect active tool
+    tool_buttons = ["add_node", "move_node", "add_edge", "delete_node", 
+                   "delete_edge", "toggle_goal", "update_heuristic", "update_weight"]
+    for btn_id in tool_buttons:
+        try:
+            btn = document[btn_id]
+            if btn_id == tool_name:
+                btn.classList.add("active")
+            else:
+                btn.classList.remove("active")
+        except:
+            pass
 
 
 def select_algorithm(algo_name):
@@ -1192,9 +1205,33 @@ def handle_keyboard_shortcuts(e):
 
 
 def main():
-    global start_date
+    global start_date, selected_tool
     
     init_canvas()
+    
+    # Check URL parameters for read-only mode
+    url_params = window.location.search
+    is_read_only = "readOnly=true" in url_params
+    
+    if is_read_only:
+        # Set default tool to move in read-only mode
+        selected_tool = "move_node"
+        
+        # Hide editing tools in read-only mode
+        editing_tools = ["add_node", "add_edge", "delete_node", "delete_edge", 
+                        "toggle_goal", "update_heuristic", "update_weight", "reset_canvas"]
+        for tool_id in editing_tools:
+            try:
+                document[tool_id].style.display = "none"
+            except:
+                pass
+        
+        # Set move_node as active and remove active from add_node
+        try:
+            document["add_node"].classList.remove("active")
+            document["move_node"].classList.add("active")
+        except:
+            pass
     
     # Bind canvas events
     canvas.bind("wheel", handle_wheel)
