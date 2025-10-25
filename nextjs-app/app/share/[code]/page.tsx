@@ -11,43 +11,55 @@ interface SharePageProps {
 export default async function SharePage({ params }: SharePageProps) {
   const { code } = await params;
   const supabase = await createClient();
+  // Defensive DB access: any Supabase error should not crash the page
+  let graph: any = null;
+  try {
+    const { data, error } = await supabase
+      .from('graphs')
+      .select('*')
+      .eq('share_code', code)
+      .single();
 
-  // Get the graph from share code
-  const { data: graph, error } = await supabase
-    .from('graphs')
-    .select('*')
-    .eq('share_code', code)
-    .single();
+    if (error) {
+      console.error('Error looking up share code', { code, message: error.message, details: error.details, hint: error.hint, errorCode: error.code });
+    }
 
-  console.log('Share code lookup:', { 
-    code, 
-    hasGraph: !!graph, 
-    error: error ? { 
-      message: error.message, 
-      details: error.details, 
-      hint: error.hint,
-      code: error.code 
-    } : null 
-  });
+    graph = data ?? null;
+  } catch (err) {
+    // Catch unexpected runtime errors from the client
+    console.error('Unexpected exception while querying graph by share code', err);
+    graph = null;
+  }
 
   if (!graph) {
-    notFound();
+    // If we couldn't fetch the graph, render a not-found page instead of throwing a 500
+    return notFound();
   }
 
-  // Get user info from auth.users using service client
+  // Get user info from auth.users using service client (only if service key is present)
   let creatorName = 'Anonymous';
-  if (graph.user_id) {
-    const serviceClient = createServiceClient();
-    const { data: userData } = await serviceClient.auth.admin.getUserById(graph.user_id);
-    if (userData?.user) {
-      creatorName = userData.user.user_metadata?.full_name 
-        || userData.user.email?.split('@')[0] 
-        || 'Anonymous';
+  try {
+    if (graph.user_id && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const serviceClient = createServiceClient();
+      const { data: userData, error: userErr } = await serviceClient.auth.admin.getUserById(graph.user_id as string);
+      if (userErr) {
+        console.error('Error fetching user by id with service client', { userErr });
+      } else if (userData?.user) {
+        creatorName = userData.user.user_metadata?.full_name 
+          || userData.user.email?.split('@')[0] 
+          || 'Anonymous';
+      }
     }
+  } catch (err) {
+    console.error('Unexpected exception when fetching user info', err);
   }
 
-  // Increment view count
-  await supabase.rpc('increment_graph_views', { graph_id: graph.id });
+  // Increment view count (best-effort)
+  try {
+    await supabase.rpc('increment_graph_views', { graph_id: graph.id });
+  } catch (err) {
+    console.error('Failed to increment graph views (ignored)', err);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
