@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/:code([A-Za-z0-9_-]{4,16})",
+      "destination": "/share/:code"
+    }
+  ]
+}
