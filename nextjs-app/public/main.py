@@ -582,7 +582,7 @@ def go_to_dashboard():
 def toggle_data_panel():
     """Toggle the visibility of the live data panel"""
     panel = document["data_panel"]
-    panel.classList.toggle("show")
+    panel.classList.toggle("collapsed")
     # Initialize Lucide icons after adding panel content
     try:
         lucide.createIcons()
@@ -1488,9 +1488,8 @@ def main():
     document["save_graph"].bind("click", lambda e: save_graph())
     document["back_to_dashboard"].bind("click", lambda e: go_to_dashboard())
     
-    # Bind data panel toggle and close buttons
-    document["toggle_data_panel"].bind("click", lambda e: toggle_data_panel())
-    document["data_panel_close"].bind("click", lambda e: toggle_data_panel())
+    # Bind data panel toggle button
+    document["data_panel_toggle"].bind("click", lambda e: toggle_data_panel())
     
     # Bind color inputs to update colors in real-time
     document["color-source"].bind("input", lambda e: update_color("source", e.target.value))
