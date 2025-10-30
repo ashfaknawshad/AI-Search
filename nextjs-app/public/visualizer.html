@@ -953,6 +953,26 @@
 			btn.addEventListener('click', function() {
 				document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
 				this.classList.add('active');
+				
+				// Auto toggle labels based on algorithm type
+				const algorithmId = this.id;
+				const uninformedAlgos = ['breadth-first', 'depth-first', 'depth-limit', 'iterative-deepening'];
+				const needsLabels = !uninformedAlgos.includes(algorithmId);
+				
+				// Get the toggle labels button
+				const toggleBtn = document.getElementById('toggle_labels');
+				
+				if (needsLabels) {
+					// Turn ON labels for algorithms that need heuristics/weights
+					if (toggleBtn && !toggleBtn.classList.contains('active')) {
+						toggleBtn.click(); // Trigger the toggle
+					}
+				} else {
+					// Turn OFF labels for uninformed algorithms
+					if (toggleBtn && toggleBtn.classList.contains('active')) {
+						toggleBtn.click(); // Trigger the toggle
+					}
+				}
 			});
 		});
 
