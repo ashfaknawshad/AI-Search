@@ -295,19 +295,70 @@
 			height: 12px;
 		}
 
-		.export-panel {
-			position: fixed;
-			top: 20px;
-			right: 20px;
+		/* Export dropdown styles */
+		.dropdown {
+			position: relative;
+			display: inline-block;
+		}
+
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			top: calc(100% + 8px);
+			left: 50%;
+			transform: translateX(-50%);
 			background: var(--panel-bg);
 			backdrop-filter: blur(10px);
-			border-radius: 16px;
-			padding: 12px;
-			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-			z-index: 1000;
+			min-width: 160px;
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+			border-radius: 12px;
+			z-index: 2000;
+			padding: 8px;
+			border: 1px solid var(--border-color);
+		}
+
+		.dropdown-content.show {
+			display: block;
+			animation: dropdownFadeIn 0.2s ease;
+		}
+
+		@keyframes dropdownFadeIn {
+			from {
+				opacity: 0;
+				transform: translateX(-50%) translateY(-10px);
+			}
+			to {
+				opacity: 1;
+				transform: translateX(-50%) translateY(0);
+			}
+		}
+
+		.dropdown-item {
+			padding: 10px 14px;
+			cursor: pointer;
+			border-radius: 8px;
 			display: flex;
-			flex-direction: column;
-			gap: 8px;
+			align-items: center;
+			gap: 10px;
+			font-size: 14px;
+			font-weight: 500;
+			color: var(--panel-text);
+			transition: all 0.2s;
+			white-space: nowrap;
+		}
+
+		.dropdown-item:hover {
+			background: #f1f5f9;
+			color: #3b82f6;
+		}
+
+		.dropdown-item i {
+			width: 18px;
+			height: 18px;
+		}
+
+		.export-panel {
+			display: none; /* Hide old export panel */
 		}
 
 		.export-btn {
@@ -517,19 +568,52 @@
 		<button class="tool-btn" id="color_settings" data-tippy-content="Customize Node Colors">
 			<i data-lucide="palette"></i>
 		</button>
+		
+		<div class="divider"></div>
+		
+		<!-- Export Dropdown -->
+		<div class="dropdown">
+			<button class="tool-btn" id="export_dropdown" data-tippy-content="Export Graph">
+				<i data-lucide="download"></i>
+			</button>
+			<div class="dropdown-content" id="export_menu">
+				<div class="dropdown-item" id="export_png">
+					<i data-lucide="image"></i>
+					<span>PNG</span>
+				</div>
+				<div class="dropdown-item" id="export_gif">
+					<i data-lucide="film"></i>
+					<span>GIF</span>
+				</div>
+				<div class="dropdown-item" id="export_pdf">
+					<i data-lucide="file-text"></i>
+					<span>PDF</span>
+				</div>
+			</div>
+		</div>
+		
+		<div class="divider"></div>
+		
+		<!-- Save and Dashboard Buttons -->
+		<button class="tool-btn" id="save_graph" data-tippy-content="Save Graph">
+			<i data-lucide="save"></i>
+		</button>
+		<button class="tool-btn" id="back_to_dashboard" data-tippy-content="Back to Dashboard">
+			<i data-lucide="home"></i>
+		</button>
 	</div>
 
-	<!-- Export Panel -->
-	<div class="export-panel">
-		<button class="export-btn" id="export_png">
+	<!-- Export Panel (hidden, keeping for compatibility) -->
+	<div class="export-panel" style="display: none;">
+		<button class="export-btn" id="export_png_old">
 			<i data-lucide="image"></i>
 			PNG
 		</button>
-		<button class="export-btn" id="export_gif">
+		<button class="export-btn" id="export_gif_old">
 			<i data-lucide="film"></i>
 			GIF
 		</button>
-		<button class="export-btn" id="export_pdf">
+		<button class="export-btn" id="export_pdf_old">
 			<i data-lucide="file-text"></i>
 			PDF
 		</button>
@@ -780,17 +864,44 @@
 			btn.addEventListener('click', function() {
 				// Skip active state handling for certain buttons
 				if (this.id === 'theme_toggle' || this.id === 'color_settings' || 
-				    this.id === 'reset_canvas' || this.id === 'toggle_labels') {
+				    this.id === 'reset_canvas' || this.id === 'toggle_labels' ||
+				    this.id === 'export_dropdown' || this.id === 'save_graph' || 
+				    this.id === 'back_to_dashboard') {
 					return;
 				}
 				
 				document.querySelectorAll('.tool-btn').forEach(b => {
 					if (b.id !== 'theme_toggle' && b.id !== 'color_settings' && 
-					    b.id !== 'reset_canvas' && b.id !== 'toggle_labels') {
+					    b.id !== 'reset_canvas' && b.id !== 'toggle_labels' &&
+					    b.id !== 'export_dropdown' && b.id !== 'save_graph' &&
+					    b.id !== 'back_to_dashboard') {
 						b.classList.remove('active');
 					}
 				});
 				this.classList.add('active');
+			});
+		});
+
+		// Export dropdown toggle
+		const exportDropdown = document.getElementById('export_dropdown');
+		const exportMenu = document.getElementById('export_menu');
+		
+		exportDropdown.addEventListener('click', function(e) {
+			e.stopPropagation();
+			exportMenu.classList.toggle('show');
+		});
+
+		// Close dropdown when clicking outside
+		document.addEventListener('click', function(e) {
+			if (!exportDropdown.contains(e.target) && !exportMenu.contains(e.target)) {
+				exportMenu.classList.remove('show');
+			}
+		});
+
+		// Close dropdown when an export option is selected
+		document.querySelectorAll('#export_menu .dropdown-item').forEach(item => {
+			item.addEventListener('click', function() {
+				exportMenu.classList.remove('show');
 			});
 		});
 

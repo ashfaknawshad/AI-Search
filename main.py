@@ -532,6 +532,38 @@ def load_graph_state_from_save(state):
         window.alert(f"Error loading graph: {e}")
 
 
+def download_graph():
+    """Download current graph as JSON file"""
+    # Get the graph state
+    json_str = get_graph_state_for_save()
+    
+    # Create a blob with the JSON data
+    blob = window.Blob.new([json_str], {"type": "application/json"})
+    
+    # Create download link
+    url = window.URL.createObjectURL(blob)
+    link = document.createElement("a")
+    link.href = url
+    
+    # Generate filename with timestamp
+    timestamp = javascript.Date.new().toISOString().split('T')[0]
+    link.download = f"graph_{timestamp}.json"
+    
+    # Trigger download
+    link.click()
+    
+    # Clean up
+    window.URL.revokeObjectURL(url)
+    
+    print(f"Graph downloaded as {link.download}")
+
+
+def go_to_dashboard():
+    """Navigate to the dashboard"""
+    # Navigate to dashboard page
+    window.location.href = "/dashboard"
+
+
 # Expose the functions to JavaScript
 window.getGraphStateForSave = get_graph_state_for_save
 window.loadGraphStateFromSave = load_graph_state_from_save
@@ -1254,6 +1286,10 @@ def main():
     document["color_settings"].bind("click", lambda e: show_color_dialog())
     document["color-close"].bind("click", lambda e: hide_color_dialog())
     document["color-reset"].bind("click", lambda e: reset_colors())
+    
+    # Bind save and dashboard buttons
+    document["save_graph"].bind("click", lambda e: download_graph())
+    document["back_to_dashboard"].bind("click", lambda e: go_to_dashboard())
     
     # Bind color inputs to update colors in real-time
     document["color-source"].bind("input", lambda e: update_color("source", e.target.value))

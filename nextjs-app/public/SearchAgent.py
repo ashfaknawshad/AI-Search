@@ -58,7 +58,8 @@ class SearchAgent(object):
 
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
-                for n in self.expand(node):
+                # Reverse to ensure leftmost child is explored first (since we pop from end)
+                for n in reversed(self.expand(node)):
                     if self.node_state(n) != "visited":
                         fringe.append(n)
                 yield
@@ -84,7 +85,8 @@ class SearchAgent(object):
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
             if len(node.path) < limit:
-                for n in self.expand(node):
+                # Reverse to ensure leftmost child is explored first
+                for n in reversed(self.expand(node)):
                     if self.node_state(n) != "visited":
                         fringe.append(n)
 
@@ -93,11 +95,12 @@ class SearchAgent(object):
         self.finished("failed", source)
 
     def iterative_deepening_search(self, max_depth_limit):
-        for limit in range(1, max_depth_limit):
-            source = self.source
-            if not self.reserve_agent():
-                return
-
+        source = self.source
+        if not self.reserve_agent():
+            return
+        
+        # Try increasing depth limits from 1 to max_depth_limit (inclusive)
+        for limit in range(1, max_depth_limit + 1):
             self.reset_graph()
             fringe = []
             node = source
@@ -112,13 +115,15 @@ class SearchAgent(object):
                 if self.node_state(node) != "visited":
                     self.set_node_state(node, "visited")
                 if len(node.path) < limit:
-                    for i in self.expand(node):
+                    # Reverse to ensure leftmost child is explored first
+                    for i in reversed(self.expand(node)):
                         if self.node_state(i) != "visited":
                             fringe.append(i)
 
                 yield
-
-            self.finished("failed", source)
+        
+        # If we exhausted all depth limits without finding goal
+        self.finished("failed", source)
 
     def uniform_cost_search(self):
         source = self.source
@@ -371,7 +376,8 @@ class SearchAgent(object):
 
     # Expand a node to its valid new states
     def expand(self, node):
-        return [Node.copy_from(self.graph[name], cost=node.cost + node.children[name], path=node.path + [node.name]) for name in node.children.keys()]
+        # Sort children alphabetically to ensure leftmost-first traversal
+        return [Node.copy_from(self.graph[name], cost=node.cost + node.children[name], path=node.path + [node.name]) for name in sorted(node.children.keys())]
 
     # Return actual cost
     def cost(self, node):

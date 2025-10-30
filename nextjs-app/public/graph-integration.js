@@ -113,113 +113,15 @@
       return;
     }
 
-    // Normal edit mode - show back button
-    const backBtn = document.createElement('button');
-    backBtn.id = 'back-to-dashboard-btn';
-    backBtn.innerHTML = '<i data-lucide="arrow-left"></i><span>Back to Dashboard</span>';
-    backBtn.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #ffffff;
-      color: #1e293b;
-      border: 1px solid #e2e8f0;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 1000;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: all 0.2s;
-    `;
-    
-    backBtn.addEventListener('mouseenter', function() {
-      this.style.background = '#f8fafc';
-      this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    });
-    
-    backBtn.addEventListener('mouseleave', function() {
-      this.style.background = '#ffffff';
-      this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-    });
-    
-    backBtn.addEventListener('click', function() {
-      // Check for unsaved changes
-      if (hasUnsavedChanges && !readOnly) {
-        if (confirm('You have unsaved changes. Do you want to save your graph before leaving?')) {
-          // Trigger save, then navigate
-          handleSave();
-          // The navigation will happen after save completes
-          return;
-        }
-      }
-      // Navigate back to dashboard
-      window.parent.postMessage({ type: 'NAVIGATE_BACK' }, '*');
-    });
-    
-    document.body.appendChild(backBtn);
-    
-    // Re-initialize Lucide icons
-    if (window.lucide && window.lucide.createIcons) {
-      window.lucide.createIcons();
-    }
+    // Normal edit mode - back button is now in the toolbar (main.py handles this)
+    // No need to create a separate back button here anymore
     
     console.log('Back button added');
   }
 
-  // Add Save button (separate from toolbar)
-  function addSaveButton() {
-    if (readOnly) return; // Don't add save button in read-only mode
-
-    const saveBtn = document.createElement('button');
-    saveBtn.id = 'save-graph-btn';
-    saveBtn.innerHTML = '<i data-lucide="save"></i><span>Save Graph</span>';
-    saveBtn.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #10b981;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 1000;
-      box-shadow: 0 2px 8px rgba(16,185,129,0.3);
-      transition: all 0.2s;
-    `;
-    
-    saveBtn.addEventListener('mouseenter', function() {
-      this.style.background = '#059669';
-      this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.4)';
-    });
-    
-    saveBtn.addEventListener('mouseleave', function() {
-      this.style.background = '#10b981';
-      this.style.boxShadow = '0 2px 8px rgba(16,185,129,0.3)';
-    });
-    
-    saveBtn.addEventListener('click', handleSave);
-    
-    document.body.appendChild(saveBtn);
-    
-    // Re-initialize Lucide icons
-    if (window.lucide && window.lucide.createIcons) {
-      window.lucide.createIcons();
-    }
-    
-    console.log('Save button added');
-  }
-
+  // Save button is now in the toolbar (main.py handles this)
+  // No need to create a separate save button here anymore
+  
   // Handle save button click
   function handleSave() {
     const graphData = getGraphData();
@@ -247,6 +149,9 @@
     hasUnsavedChanges = false;
     initialGraphState = JSON.stringify(graphData);
   }
+
+  // Expose handleSave to window so it can be called from toolbar button
+  window.handleSave = handleSave;
 
   // Load graph data if provided in URL
   if (graphDataStr) {
@@ -305,14 +210,14 @@
       console.log('DOM loaded, waiting 1 second to add buttons...');
       setTimeout(function() {
         addBackButton();
-        addSaveButton();
+        // addSaveButton(); // Now in toolbar
       }, 1000);
     });
   } else {
     console.log('DOM already loaded, waiting 1 second to add buttons...');
     setTimeout(function() {
       addBackButton();
-      addSaveButton();
+      // addSaveButton(); // Now in toolbar
     }, 1000);
   }
 

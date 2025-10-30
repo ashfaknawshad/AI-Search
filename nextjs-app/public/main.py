@@ -54,6 +54,10 @@ selected_node_name = unselected
 selected_edge_ends = unselected
 selected_search_algorithm = "breadth-first"
 
+# Algorithm parameters
+depth_limit_value = 3  # Default depth limit for depth-limited search
+iterative_deepening_max = 10  # Default max depth for iterative deepening
+
 # Animation and search
 start_date = 0
 search_generator = None
@@ -530,6 +534,49 @@ def load_graph_state_from_save(state):
     except Exception as e:
         print(f"Error loading graph: {e}")
         window.alert(f"Error loading graph: {e}")
+
+
+def download_graph():
+    """Download current graph as JSON file"""
+    # Get the graph state
+    json_str = get_graph_state_for_save()
+    
+    # Create a blob with the JSON data
+    blob = window.Blob.new([json_str], {"type": "application/json"})
+    
+    # Create download link
+    url = window.URL.createObjectURL(blob)
+    link = document.createElement("a")
+    link.href = url
+    
+    # Generate filename with timestamp
+    timestamp = javascript.Date.new().toISOString().split('T')[0]
+    link.download = f"graph_{timestamp}.json"
+    
+    # Trigger download
+    link.click()
+    
+    # Clean up
+    window.URL.revokeObjectURL(url)
+    
+    print(f"Graph downloaded as {link.download}")
+
+
+def save_graph():
+    """Save graph - calls handleSave from graph-integration.js if available"""
+    # Check if we're in the integrated environment (nextjs app)
+    if hasattr(window, 'handleSave'):
+        # Call the handleSave function from graph-integration.js
+        window.handleSave()
+    else:
+        # Fallback to download for standalone version
+        download_graph()
+
+
+def go_to_dashboard():
+    """Navigate to the dashboard"""
+    # Navigate to dashboard page
+    window.location.href = "/dashboard"
 
 
 # Expose the functions to JavaScript
@@ -1017,6 +1064,50 @@ def hide_color_dialog():
     document["color-modal"].close()
 
 
+def hide_depth_limit_dialog():
+    """Hide the depth limit dialog"""
+    document["depth-limit-modal"].close()
+
+
+def start_depth_limit_search():
+    """Start depth-limited search with user-specified limit"""
+    global depth_limit_value, graph_updated
+    
+    # Validate the form
+    validated = document["depth-limit-form"].reportValidity()
+    if validated:
+        # Get the depth limit value from input
+        depth_limit_value = int(document["depth-limit-input"].value)
+        
+        # Close the modal
+        document["depth-limit-modal"].close()
+        
+        # Execute the search
+        execute_search()
+
+
+def hide_iterative_deepening_dialog():
+    """Hide the iterative deepening dialog"""
+    document["iterative-deepening-modal"].close()
+
+
+def start_iterative_deepening_search():
+    """Start iterative deepening search with user-specified max depth"""
+    global iterative_deepening_max, graph_updated
+    
+    # Validate the form
+    validated = document["iterative-deepening-form"].reportValidity()
+    if validated:
+        # Get the max depth value from input
+        iterative_deepening_max = int(document["iterative-deepening-input"].value)
+        
+        # Close the modal
+        document["iterative-deepening-modal"].close()
+        
+        # Execute the search
+        execute_search()
+
+
 def update_color(color_type, color_value):
     """Update node color in real-time"""
     global node_colors, graph_updated
@@ -1087,11 +1178,29 @@ def start_search():
         window.alert("Please set at least one goal node (green) before starting search!")
         return
     
+    # If depth-limit is selected, show modal to get limit value
+    if selected_search_algorithm == "depth-limit":
+        document["depth-limit-modal"].showModal()
+        return
+    
+    # If iterative-deepening is selected, show modal to get max depth
+    if selected_search_algorithm == "iterative-deepening":
+        document["iterative-deepening-modal"].showModal()
+        return
+    
+    # Otherwise, start the search immediately
+    execute_search()
+
+
+def execute_search():
+    """Actually execute the search algorithm"""
+    global search_generator, start_date, search_start_time, gif_recorder, graph_updated, depth_limit_value, iterative_deepening_max
+    
     algorithms = {
         "breadth-first": search_agent.breadth_first_search,
         "depth-first": search_agent.depth_first_search,
-        "depth-limit": lambda: search_agent.depth_limit_search(3),
-        "iterative-deepening": lambda: search_agent.iterative_deepening_search(10),
+        "depth-limit": lambda: search_agent.depth_limit_search(depth_limit_value),
+        "iterative-deepening": lambda: search_agent.iterative_deepening_search(iterative_deepening_max),
         "uniform-cost": search_agent.uniform_cost_search,
         "bidirectional": search_agent.bidirectional_search,
         "greedy": search_agent.greedy_search,
@@ -1287,10 +1396,22 @@ def main():
         update_heuristic() if selected_tool == "update_heuristic" else update_weight()
     ))
     
+    # Bind depth limit modal buttons
+    document["depth-limit-cancel"].bind("click", lambda e: hide_depth_limit_dialog())
+    document["depth-limit-start"].bind("click", lambda e: start_depth_limit_search())
+    
+    # Bind iterative deepening modal buttons
+    document["iterative-deepening-cancel"].bind("click", lambda e: hide_iterative_deepening_dialog())
+    document["iterative-deepening-start"].bind("click", lambda e: start_iterative_deepening_search())
+    
     # Bind color settings
     document["color_settings"].bind("click", lambda e: show_color_dialog())
     document["color-close"].bind("click", lambda e: hide_color_dialog())
     document["color-reset"].bind("click", lambda e: reset_colors())
+    
+    # Bind save and dashboard buttons
+    document["save_graph"].bind("click", lambda e: save_graph())
+    document["back_to_dashboard"].bind("click", lambda e: go_to_dashboard())
     
     # Bind color inputs to update colors in real-time
     document["color-source"].bind("input", lambda e: update_color("source", e.target.value))
