@@ -32,7 +32,7 @@ dragged_node_name = None
 # Graph visualization
 circle_radius = 20
 weight_text_shift = 10
-show_labels = True  # Toggle for heuristics and weights display
+show_labels = False  # Toggle for heuristics and weights display (starts OFF for BFS)
 circle_colors = {
     "unselected": "#1e293b",
     "selected": "#ef4444"
