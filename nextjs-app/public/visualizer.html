@@ -362,6 +362,135 @@
 		display: none; /* Hide old export panel */
 	}
 	
+	/* Live Data Panel */
+		.data-panel {
+			position: fixed;
+			right: -380px;
+			top: 0;
+			width: 380px;
+			height: 100vh;
+			background: var(--panel-bg);
+			border-left: 1px solid var(--border-color);
+			box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+			z-index: 900;
+			transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		.data-panel.show {
+			right: 0;
+		}
+
+		.data-panel-header {
+			padding: 16px 20px;
+			border-bottom: 1px solid var(--border-color);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.data-panel-title {
+			font-size: 15px;
+			font-weight: 600;
+			color: var(--text-color);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.data-panel-close {
+			background: none;
+			border: none;
+			cursor: pointer;
+			padding: 6px;
+			border-radius: 6px;
+			color: var(--text-color);
+			transition: all 0.2s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.data-panel-close:hover {
+			background: var(--hover-bg);
+		}
+
+		.data-panel-close i {
+			width: 18px;
+			height: 18px;
+		}
+
+		.data-panel-content {
+			flex: 1;
+			overflow-y: auto;
+			padding: 20px;
+		}
+
+		.data-section {
+			margin-bottom: 24px;
+		}
+
+		.data-section-title {
+			font-size: 11px;
+			font-weight: 700;
+			color: var(--text-color);
+			margin-bottom: 10px;
+			text-transform: uppercase;
+			letter-spacing: 0.8px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.data-array {
+			background: var(--canvas-bg);
+			border: 1px solid var(--border-color);
+			border-radius: 8px;
+			padding: 12px;
+			font-family: 'Courier New', monospace;
+			font-size: 13px;
+			color: var(--text-color);
+			min-height: 40px;
+			max-height: 150px;
+			overflow-y: auto;
+			word-wrap: break-word;
+			line-height: 1.6;
+		}
+
+		.data-array::-webkit-scrollbar {
+			width: 6px;
+		}
+
+		.data-array::-webkit-scrollbar-track {
+			background: var(--canvas-bg);
+		}
+
+		.data-array::-webkit-scrollbar-thumb {
+			background: var(--border-color);
+			border-radius: 3px;
+		}
+
+		.array-empty {
+			color: #94a3b8;
+			font-style: italic;
+		}
+
+		.array-bracket {
+			color: #64748b;
+			font-weight: bold;
+		}
+
+		.array-item {
+			color: #3b82f6;
+			font-weight: 500;
+		}
+
+		.array-comma {
+			color: #64748b;
+		}
+	
 	.export-btn {
 			padding: 10px 16px;
 			border-radius: 8px;
@@ -601,6 +730,13 @@
 	</button>
 	<button class="tool-btn" id="back_to_dashboard" data-tippy-content="Back to Dashboard">
 		<i data-lucide="home" style="color: #3b82f6;"></i>
+	</button>
+	
+	<div class="divider"></div>
+	
+	<!-- Data Panel Toggle -->
+	<button class="tool-btn" id="toggle_data_panel" data-tippy-content="Toggle Live Data Panel">
+		<i data-lucide="database"></i>
 	</button>
 </div>	<!-- Export Panel (hidden, keeping for compatibility) -->
 	<div class="export-panel" style="display: none;">
@@ -1108,6 +1244,60 @@
 
 	<!-- Graph Integration Script -->
 	<script src="graph-integration.js?v=1.4"></script>
+
+	<!-- Live Data Panel -->
+	<div class="data-panel" id="data_panel">
+		<div class="data-panel-header">
+			<div class="data-panel-title">
+				<i data-lucide="database"></i>
+				Live Algorithm Data
+			</div>
+			<button class="data-panel-close" id="data_panel_close">
+				<i data-lucide="x"></i>
+			</button>
+		</div>
+		<div class="data-panel-content">
+			<div class="data-section">
+				<div class="data-section-title">
+					<i data-lucide="list"></i>
+					Fringe / Frontier
+				</div>
+				<div class="data-array" id="fringe_data">
+					<span class="array-empty">No data yet</span>
+				</div>
+			</div>
+
+			<div class="data-section">
+				<div class="data-section-title">
+					<i data-lucide="check-circle"></i>
+					Visited Nodes
+				</div>
+				<div class="data-array" id="visited_data">
+					<span class="array-empty">No data yet</span>
+				</div>
+			</div>
+
+			<div class="data-section">
+				<div class="data-section-title">
+					<i data-lucide="arrow-right-circle"></i>
+					Traversal Order
+				</div>
+				<div class="data-array" id="traversal_data">
+					<span class="array-empty">No data yet</span>
+				</div>
+			</div>
+
+			<div class="data-section">
+				<div class="data-section-title">
+					<i data-lucide="route"></i>
+					Solution Path
+				</div>
+				<div class="data-array" id="path_data">
+					<span class="array-empty">No path found yet</span>
+				</div>
+			</div>
+		</div>
+	</div>
 
 </body>
 

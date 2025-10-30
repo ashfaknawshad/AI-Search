@@ -10,6 +10,12 @@ class SearchAgent(object):
         self.__agent_status = "idle"
         self.graph = graph
         self.nodes_visited = 0  # Track number of nodes visited during search
+        
+        # Live visualization arrays
+        self.fringe_array = []  # Current fringe/frontier nodes
+        self.visited_array = []  # Nodes that have been visited
+        self.traversal_array = []  # Order in which nodes were visited
+        self.path_array = []  # Final solution path (populated at the end)
 
     ################################################
     ########		Search Algorithms		########
@@ -24,18 +30,39 @@ class SearchAgent(object):
         fringe = []
         node = source
         fringe.append(node)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe:
             node = fringe.pop(0)
+            
+            # Update fringe array
+            self.fringe_array = [n.name for n in fringe]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
 
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+                
                 for n in self.expand(node):
                     if self.node_state(n) != "visited":
                         fringe.append(n)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [n.name for n in fringe]
                 yield
 
         self.finished("failed", source)
@@ -49,19 +76,40 @@ class SearchAgent(object):
         fringe = []
         node = source
         fringe.append(node)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe:
             node = fringe.pop()
+            
+            # Update fringe array
+            self.fringe_array = [n.name for n in fringe]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
 
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+                
                 # Reverse to ensure leftmost child is explored first (since we pop from end)
                 for n in reversed(self.expand(node)):
                     if self.node_state(n) != "visited":
                         fringe.append(n)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [n.name for n in fringe]
                 yield
 
         self.finished("failed", source)
@@ -75,20 +123,41 @@ class SearchAgent(object):
         fringe = []
         node = source
         fringe.append(node)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe:
             node = fringe.pop()
+            
+            # Update fringe array
+            self.fringe_array = [n.name for n in fringe]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
 
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+            
             if len(node.path) < limit:
                 # Reverse to ensure leftmost child is explored first
                 for n in reversed(self.expand(node)):
                     if self.node_state(n) != "visited":
                         fringe.append(n)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [n.name for n in fringe]
 
             yield
 
@@ -99,26 +168,50 @@ class SearchAgent(object):
         if not self.reserve_agent():
             return
         
+        # Initialize arrays
+        self.fringe_array = []
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
+        
         # Try increasing depth limits from 1 to max_depth_limit (inclusive)
         for limit in range(1, max_depth_limit + 1):
             self.reset_graph()
             fringe = []
             node = source
             fringe.append(node)
+            
+            # Update fringe for this depth iteration
+            self.fringe_array = [node.name]
 
             while fringe:
                 node = fringe.pop()
+                
+                # Update fringe array
+                self.fringe_array = [n.name for n in fringe]
+                
                 if self.is_goal_state(node):
+                    # Build path array from the path
+                    self.path_array = node.path + [node.name]
                     self.finished("success", node)
                     return
 
                 if self.node_state(node) != "visited":
                     self.set_node_state(node, "visited")
+                    # Add to traversal order
+                    self.traversal_array.append(node.name)
+                    # Add to visited array
+                    if node.name not in self.visited_array:
+                        self.visited_array.append(node.name)
+                
                 if len(node.path) < limit:
                     # Reverse to ensure leftmost child is explored first
                     for i in reversed(self.expand(node)):
                         if self.node_state(i) != "visited":
                             fringe.append(i)
+                    
+                    # Update fringe array after expansion
+                    self.fringe_array = [n.name for n in fringe]
 
                 yield
         
@@ -134,17 +227,39 @@ class SearchAgent(object):
         fringe = PriorityQueue()
         node = source
         fringe.add(node, node.cost)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe.isNotEmpty():
             node = fringe.pop()
+            
+            # Update fringe array (extract names from priority queue items)
+            self.fringe_array = [item.data.name for item in fringe.heap]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
+            
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+                
                 for n in self.expand(node):
                     if self.node_state(n) != "visited":
                         fringe.add(n, n.cost)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [item.data.name for item in fringe.heap]
 
             yield
 
@@ -159,17 +274,39 @@ class SearchAgent(object):
         fringe = PriorityQueue()
         node = source
         fringe.add(node, node.heuristic)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe.isNotEmpty():
             node = fringe.pop()
+            
+            # Update fringe array
+            self.fringe_array = [item.data.name for item in fringe.heap]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
+            
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+                
                 for n in self.expand(node):
                     if self.node_state(n) != "visited":
                         fringe.add(n, n.heuristic)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [item.data.name for item in fringe.heap]
 
             yield
 
@@ -184,17 +321,39 @@ class SearchAgent(object):
         fringe = PriorityQueue()
         node = source
         fringe.add(node, node.cost + node.heuristic)
+        
+        # Initialize arrays
+        self.fringe_array = [node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
 
         while fringe.isNotEmpty():
             node = fringe.pop()
+            
+            # Update fringe array
+            self.fringe_array = [item.data.name for item in fringe.heap]
+            
             if self.is_goal_state(node):
+                # Build path array from the path
+                self.path_array = node.path + [node.name]
                 self.finished("success", node)
                 return
+            
             if self.node_state(node) != "visited":
                 self.set_node_state(node, "visited")
+                # Add to traversal order
+                self.traversal_array.append(node.name)
+                # Add to visited array
+                if node.name not in self.visited_array:
+                    self.visited_array.append(node.name)
+                
                 for n in self.expand(node):
                     if self.node_state(n) != "visited":
                         fringe.add(n, n.cost + n.heuristic)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [item.data.name for item in fringe.heap]
 
             yield
 
@@ -221,12 +380,6 @@ class SearchAgent(object):
             return
 
         self.reset_graph()
-
-        # Build a predecessor map for efficient backward search
-        predecessors = {name: [] for name in self.graph}
-        for name, node in self.graph.items():
-            for child_name in node.children:
-                predecessors[child_name].append(name)
         
         # Two frontiers: forward from start, backward from goal
         forward_fringe = [source]
@@ -240,6 +393,12 @@ class SearchAgent(object):
         forward_visited[source.name] = None
         backward_visited[goal_node.name] = None
         
+        # Initialize arrays (show both fringes combined)
+        self.fringe_array = [source.name, goal_node.name]
+        self.visited_array = []
+        self.traversal_array = []
+        self.path_array = []
+        
         # Alternate between forward and backward search
         forward_turn = True
         meeting_point = None
@@ -251,6 +410,9 @@ class SearchAgent(object):
                     break
                 node = forward_fringe.pop(0)
                 
+                # Update fringe array (combine both fringes)
+                self.fringe_array = [n.name for n in forward_fringe] + [n.name for n in backward_fringe]
+                
                 # Check if this node was visited by backward search (meeting point!)
                 if node.name in backward_visited:
                     meeting_point = node.name
@@ -259,6 +421,11 @@ class SearchAgent(object):
                 # Mark as visited from forward direction and show it
                 if node.name != source.name:
                     self.set_node_state(self.graph[node.name], "visited")
+                    # Add to traversal order
+                    self.traversal_array.append(node.name)
+                    # Add to visited array
+                    if node.name not in self.visited_array:
+                        self.visited_array.append(node.name)
                     yield  # Yield after marking to show the node
                 
                 # Expand forward
@@ -268,11 +435,17 @@ class SearchAgent(object):
                         child_node = self.graph[child_name]
                         forward_fringe.append(child_node)
                 
+                # Update fringe array after expansion
+                self.fringe_array = [n.name for n in forward_fringe] + [n.name for n in backward_fringe]
+                
             else:
                 # Backward search step
                 if not backward_fringe:
                     break
                 node = backward_fringe.pop(0)
+                
+                # Update fringe array
+                self.fringe_array = [n.name for n in forward_fringe] + [n.name for n in backward_fringe]
                 
                 # Check if this node was visited by forward search (meeting point!)
                 if node.name in forward_visited:
@@ -282,13 +455,22 @@ class SearchAgent(object):
                 # Mark as visited from backward direction and show it
                 if node.name != goal_node.name:
                     self.set_node_state(self.graph[node.name], "visited")
+                    # Add to traversal order
+                    self.traversal_array.append(node.name)
+                    # Add to visited array
+                    if node.name not in self.visited_array:
+                        self.visited_array.append(node.name)
                     yield  # Yield after marking to show the node
                 
-                # Expand backward (MUCH faster using the map)
-                for parent_name in predecessors[node.name]:
-                    if parent_name not in backward_visited:
-                        backward_visited[parent_name] = node.name
-                        backward_fringe.append(self.graph[parent_name])
+                # Expand backward (find parents - nodes that have this as child)
+                for potential_parent in self.graph.values():
+                    if node.name in potential_parent.children:
+                        if potential_parent.name not in backward_visited:
+                            backward_visited[potential_parent.name] = node.name
+                            backward_fringe.append(potential_parent)
+                
+                # Update fringe array after expansion
+                self.fringe_array = [n.name for n in forward_fringe] + [n.name for n in backward_fringe]
             
             forward_turn = not forward_turn
         
@@ -311,6 +493,9 @@ class SearchAgent(object):
             
             # Combine paths
             full_path = forward_path + backward_path
+            
+            # Set path array
+            self.path_array = full_path
             
             # Create result node with full path
             result_node = Node.copy_from(

@@ -579,6 +579,17 @@ def go_to_dashboard():
     window.location.href = "/dashboard"
 
 
+def toggle_data_panel():
+    """Toggle the visibility of the live data panel"""
+    panel = document["data_panel"]
+    panel.classList.toggle("show")
+    # Initialize Lucide icons after adding panel content
+    try:
+        lucide.createIcons()
+    except:
+        pass
+
+
 # Expose the functions to JavaScript
 window.getGraphStateForSave = get_graph_state_for_save
 window.loadGraphStateFromSave = load_graph_state_from_save
@@ -881,6 +892,10 @@ def animation_loop(event=None):
                     print(f"after_step: {states}")
                 except Exception:
                     print("after_step: (could not serialize states)")
+                
+                # Update the data panel with current algorithm state
+                update_data_panel()
+                
                 start_date = now
                 
                 # Capture frame for GIF if recording
@@ -960,6 +975,66 @@ def animation_loop(event=None):
 ########################################
 ########    UI Interactions     ########
 ########################################
+
+def update_data_panel():
+    """Update the live data panel with current algorithm state"""
+    if search_agent is None:
+        return
+    
+    try:
+        # Format fringe array
+        fringe_el = document["fringe_data"]
+        if len(search_agent.fringe_array) > 0:
+            fringe_html = '<span class="array-bracket">[</span> '
+            for i, item in enumerate(search_agent.fringe_array):
+                if i > 0:
+                    fringe_html += '<span class="array-comma">, </span>'
+                fringe_html += f'<span class="array-item">{item}</span>'
+            fringe_html += ' <span class="array-bracket">]</span>'
+            fringe_el.innerHTML = fringe_html
+        else:
+            fringe_el.innerHTML = '<span class="array-empty">Empty</span>'
+        
+        # Format visited array
+        visited_el = document["visited_data"]
+        if len(search_agent.visited_array) > 0:
+            visited_html = '<span class="array-bracket">[</span> '
+            for i, item in enumerate(search_agent.visited_array):
+                if i > 0:
+                    visited_html += '<span class="array-comma">, </span>'
+                visited_html += f'<span class="array-item">{item}</span>'
+            visited_html += ' <span class="array-bracket">]</span>'
+            visited_el.innerHTML = visited_html
+        else:
+            visited_el.innerHTML = '<span class="array-empty">No nodes visited yet</span>'
+        
+        # Format traversal order array
+        traversal_el = document["traversal_data"]
+        if len(search_agent.traversal_array) > 0:
+            traversal_html = '<span class="array-bracket">[</span> '
+            for i, item in enumerate(search_agent.traversal_array):
+                if i > 0:
+                    traversal_html += '<span class="array-comma">, </span>'
+                traversal_html += f'<span class="array-item">{item}</span>'
+            traversal_html += ' <span class="array-bracket">]</span>'
+            traversal_el.innerHTML = traversal_html
+        else:
+            traversal_el.innerHTML = '<span class="array-empty">No traversal yet</span>'
+        
+        # Format path array
+        path_el = document["path_data"]
+        if len(search_agent.path_array) > 0:
+            path_html = '<span class="array-bracket">[</span> '
+            for i, item in enumerate(search_agent.path_array):
+                if i > 0:
+                    path_html += '<span class="array-comma">, </span>'
+                path_html += f'<span class="array-item">{item}</span>'
+            path_html += ' <span class="array-bracket">]</span>'
+            path_el.innerHTML = path_html
+        else:
+            path_el.innerHTML = '<span class="array-empty">No path found yet</span>'
+    except Exception as e:
+        print(f"Error updating data panel: {e}")
 
 def show_search_results(success, path_cost, nodes_visited, time_taken):
     """Show search results in a toast notification"""
@@ -1412,6 +1487,10 @@ def main():
     # Bind save and dashboard buttons
     document["save_graph"].bind("click", lambda e: save_graph())
     document["back_to_dashboard"].bind("click", lambda e: go_to_dashboard())
+    
+    # Bind data panel toggle and close buttons
+    document["toggle_data_panel"].bind("click", lambda e: toggle_data_panel())
+    document["data_panel_close"].bind("click", lambda e: toggle_data_panel())
     
     # Bind color inputs to update colors in real-time
     document["color-source"].bind("input", lambda e: update_color("source", e.target.value))
